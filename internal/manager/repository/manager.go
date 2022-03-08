@@ -20,7 +20,7 @@ type Manager interface {
 		description string,
 		jiraTicketIDs []string,
 	) (*MergeRequest, error)
-	ListMergeRequests(ctx context.Context, projectID int, jiraTicketIDs []string) ([]*MergeRequest, error)
+	ListMergeRequests(ctx context.Context, projectID int, jiraTicketIDs []string, state string) ([]*MergeRequest, error)
 }
 
 type manager struct {
@@ -73,10 +73,10 @@ func (m manager) CreateMergeRequest(
 	}, nil
 }
 
-func (m manager) ListMergeRequests(ctx context.Context, projectID int, jiraTicketIDs []string) ([]*MergeRequest, error) {
+func (m manager) ListMergeRequests(ctx context.Context, projectID int, jiraTicketIDs []string, state string) ([]*MergeRequest, error) {
 	myMergeRequests, err := m.accessor.ListMergeRequests(ctx, &gitlab.ListMergeRequestRequest{
 		ID:             projectID,
-		State:          "opened",
+		State:          state,
 		AuthorUsername: "jason.limantoro",
 	})
 

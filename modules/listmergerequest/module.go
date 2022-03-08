@@ -34,7 +34,12 @@ func (m module) Do(ctx context.Context, args *Args) error {
 		return errlib.WrapFunc(err)
 	}
 
-	matchingMergeRequests, err := m.repositorydm.ListMergeRequests(ctx, repositoryData.ProjectID, args.JiraTicketIDs)
+	matchingMergeRequests, err := m.repositorydm.ListMergeRequests(
+		ctx,
+		repositoryData.ProjectID,
+		args.JiraTicketIDs,
+		args.State,
+	)
 	if err != nil {
 		return errlib.WrapFunc(err)
 	}
@@ -75,14 +80,17 @@ func (m module) Do(ctx context.Context, args *Args) error {
 type Args struct {
 	Repository    string
 	JiraTicketIDs []string
+	State         string
 }
 
 func (a *Args) FromMap(flags map[string]string) *Args {
 	repositoryVal, _ := flags["repository"]
 	jiraVal, _ := flags["jira"]
+	stateVal, _ := flags["state"]
 
 	a.Repository = repositoryVal
 	a.JiraTicketIDs = strings.Split(jiraVal, ",")
+	a.State = stateVal
 
 	return a
 }
