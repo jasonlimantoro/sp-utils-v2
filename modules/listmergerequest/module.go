@@ -3,11 +3,17 @@ package listmergerequest
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"git.garena.com/shopee/marketplace-payments/common/errlib"
 
+	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/accessor/gitlab"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/manager/repository"
+)
+
+var (
+	TargetBranchToCompare = []string{"test"}
 )
 
 type Module interface {
@@ -23,18 +29,44 @@ func NewModule(repositorydm repository.Manager) *module {
 }
 
 func (m module) Do(ctx context.Context, args *Args) error {
-	repository, err := m.repositorydm.GetByName(ctx, args.Repository)
+	repositoryData, err := m.repositorydm.GetByName(ctx, args.Repository)
 	if err != nil {
 		return errlib.WrapFunc(err)
 	}
 
-	matchingMergeRequests, err := m.repositorydm.ListMergeRequests(ctx, repository.ProjectID, args.JiraTicketIDs)
+	matchingMergeRequests, err := m.repositorydm.ListMergeRequests(ctx, repositoryData.ProjectID, args.JiraTicketIDs)
 	if err != nil {
 		return errlib.WrapFunc(err)
 	}
+
+	bySourceBranch := make(map[string][]*repository.MergeRequest)
 
 	for _, mr := range matchingMergeRequests {
-		fmt.Printf("%s: %s -> %s\n", mr.Title, mr.WebURL, mr.State)
+		if _, ok := bySourceBranch[mr.SourceBranch]; !ok {
+			bySourceBranch[mr.SourceBranch] = []*repository.MergeRequest{mr}
+		} else {
+			bySourceBranch[mr.SourceBranch] = append(bySourceBranch[mr.SourceBranch], mr)
+		}
+	}
+
+	for sourceBranch, mergeRequests := range bySourceBranch {
+		for _, mr := range mergeRequests {
+			fmt.Printf("%s|%s: %s (%s)\n", mr.TargetBranch, mr.Title, mr.WebURL, mr.State)
+		}
+
+		fmt.Println()
+
+		fmt.Printf("Branch comparison links for %s: \n", sourceBranch)
+
+		for _, targetBranch := range TargetBranchToCompare {
+			fmt.Printf("%s|https://%s/%s/-/compare/%s...%s\n",
+				targetBranch,
+				gitlab.GitlabHost,
+				args.Repository,
+				targetBranch,
+				url.QueryEscape(sourceBranch),
+			)
+		}
 	}
 
 	return nil
