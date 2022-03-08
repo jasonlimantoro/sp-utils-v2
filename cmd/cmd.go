@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createmergerequest"
+	listmergerequestcmd "git.garena.com/jason.limantoro/shopee-utils-v2/cmd/listmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/registry"
 )
 
@@ -85,6 +86,29 @@ func initCommand(diRegistry *registry.Registry) Command {
 							},
 						},
 						Runner: createmergerequestcmd.NewRunner(diRegistry.CreateMergeRequestModule),
+					},
+					{
+						Name:        "list",
+						Description: "List MR",
+						Flags: []Flag{
+							{
+								Name:         "repository",
+								Description:  "repository to create the MR in",
+								Shorthand:    "r",
+								DefaultValue: "",
+								Required:     true,
+								Persistent:   false,
+							},
+							{
+								Name:         "jira",
+								Description:  "relevant jira tickets (e.g. SPOT-1234,SPOT-3245)",
+								Shorthand:    "j",
+								DefaultValue: "",
+								Required:     true,
+								Persistent:   false,
+							},
+						},
+						Runner: listmergerequestcmd.NewRunner(diRegistry.ListMergeRequestModule),
 					},
 				},
 			},

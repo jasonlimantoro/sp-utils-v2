@@ -11,6 +11,7 @@ import (
 	"net/url"
 
 	"git.garena.com/shopee/marketplace-payments/common/errlib"
+	"github.com/google/go-querystring/query"
 
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/config"
 )
@@ -20,6 +21,7 @@ var ErrHTTPStatusNon2xx = errors.New("err_http_status_non_2xx")
 type Accessor interface {
 	GetProjectByName(ctx context.Context, name string) (*Project, error)
 	CreateMergeRequest(ctx context.Context, req *CreateMergeRequestRequest) (*MergeRequest, error)
+	ListMergeRequests(ctx context.Context, req *ListMergeRequestRequest) ([]*MergeRequest, error)
 }
 
 type accessor struct {
@@ -75,7 +77,7 @@ func (a accessor) postJSON(ctx context.Context, path string, req, res interface{
 	return nil
 }
 
-func (a accessor) get(ctx context.Context, path string, res interface{}) error {
+func (a accessor) getJSON(ctx context.Context, path string, res interface{}) error {
 	fullURL := fmt.Sprintf("https://%s/%s", GitlabHost, path)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
 	if err != nil {
@@ -114,7 +116,7 @@ func (a accessor) get(ctx context.Context, path string, res interface{}) error {
 func (a accessor) GetProjectByName(ctx context.Context, name string) (*Project, error) {
 	res := &Project{}
 
-	err := a.get(ctx, fmt.Sprintf(RouteGetProjectsByName, url.QueryEscape(name)), res)
+	err := a.getJSON(ctx, fmt.Sprintf(RouteGetProjectsByName, url.QueryEscape(name)), res)
 
 	if err != nil {
 		return nil, errlib.WrapFunc(err)
@@ -128,6 +130,17 @@ func (a accessor) CreateMergeRequest(ctx context.Context, req *CreateMergeReques
 
 	err := a.postJSON(ctx, fmt.Sprintf(RouteCreateMergeRequest, req.ID), req, res)
 	if err != nil {
+		return nil, errlib.WrapFunc(err)
+	}
+
+	return res, nil
+}
+
+func (a accessor) ListMergeRequests(ctx context.Context, req *ListMergeRequestRequest) ([]*MergeRequest, error) {
+	res := []*MergeRequest{}
+	q, _ := query.Values(req)
+
+	if err := a.getJSON(ctx, fmt.Sprintf(RouteListMergeRequests, req.ID, q.Encode()), &res); err != nil {
 		return nil, errlib.WrapFunc(err)
 	}
 

@@ -20,6 +20,7 @@ type Manager interface {
 		description string,
 		jiraTicketIDs []string,
 	) (*MergeRequest, error)
+	ListMergeRequests(ctx context.Context, projectID int, jiraTicketIDs []string) ([]*MergeRequest, error)
 }
 
 type manager struct {
@@ -68,8 +69,37 @@ func (m manager) CreateMergeRequest(
 	}
 
 	return &MergeRequest{
-		ID:     res.ID,
-		Title:  res.Title,
-		WebURL: res.WebURL,
+		res,
 	}, nil
+}
+
+func (m manager) ListMergeRequests(ctx context.Context, projectID int, jiraTicketIDs []string) ([]*MergeRequest, error) {
+	myMergeRequests, err := m.accessor.ListMergeRequests(ctx, &gitlab.ListMergeRequestRequest{
+		ID:             projectID,
+		State:          "opened",
+		AuthorUsername: "jason.limantoro",
+	})
+
+	if err != nil {
+		return nil, errlib.WrapFunc(err)
+	}
+
+	res := []*MergeRequest{}
+	for _, mr := range myMergeRequests {
+		if titleContainsJiraTickets(mr.Title, jiraTicketIDs) {
+			res = append(res, &MergeRequest{mr})
+		}
+	}
+
+	return res, nil
+}
+
+func titleContainsJiraTickets(title string, jiraTicketIDs []string) bool {
+	for _, jiraTicketID := range jiraTicketIDs {
+		if strings.Contains(strings.ToUpper(title), strings.ToUpper(jiraTicketID)) {
+			return true
+		}
+	}
+
+	return false
 }
