@@ -1,19 +1,25 @@
 package reviewmergerequest
 
 import (
+	"bytes"
+	"io"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_renderMessage(t *testing.T) {
 	type args struct {
 		payload      SubstitutionPayload
 		templatePath string
+		out          io.Writer
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name          string
+		args          args
+		wantErr       bool
+		wantOutString string
 	}{
 		{
 			name: "with footer",
@@ -36,8 +42,19 @@ func Test_renderMessage(t *testing.T) {
 					Footer: "Can also publish to master topic?",
 				},
 				templatePath: absPath("code-review.tpl"),
+				out:          &bytes.Buffer{},
 			},
 			wantErr: false,
+			wantOutString: `Hi @shannon.wong, please review the following:
+**Test MR**
+
+- bridge|master: https://git.garena.com/shopee/pl/marketplace-payment/-/merge_requests/914
+- bridge|uat: https://git.garena.com/shopee/pl/marketplace-payment/-/merge_requests/913
+
+Can also publish to master topic?
+
+Thank you! :capoo-thanks:
+`,
 		},
 		{
 			name: "without footer",
@@ -59,15 +76,26 @@ func Test_renderMessage(t *testing.T) {
 					},
 				},
 				templatePath: absPath("code-review.tpl"),
+				out:          &bytes.Buffer{},
 			},
 			wantErr: false,
+			wantOutString: `Hi @shannon.wong, please review the following:
+**Test MR**
+
+- bridge|master: https://git.garena.com/shopee/pl/marketplace-payment/-/merge_requests/914
+- bridge|uat: https://git.garena.com/shopee/pl/marketplace-payment/-/merge_requests/913
+
+Thank you! :capoo-thanks:
+`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := renderMessage(tt.args.payload, tt.args.templatePath); (err != nil) != tt.wantErr {
+			if err := renderMessage(tt.args.payload, tt.args.templatePath, tt.args.out); (err != nil) != tt.wantErr {
 				t.Errorf("renderMessage() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			resBuf := tt.args.out.(*bytes.Buffer)
+			assert.Equal(t, tt.wantOutString, resBuf.String())
 		})
 	}
 }

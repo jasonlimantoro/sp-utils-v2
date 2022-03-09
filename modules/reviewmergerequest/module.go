@@ -2,6 +2,7 @@ package reviewmergerequest
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -43,7 +44,7 @@ func (m module) Do(ctx context.Context, args *Args) error {
 	substitutionPayload := constructSubstitutionPayload(args.Repository, "", mergeRequests)
 
 	templatePath, _ := filepath.Abs(args.TemplateFilePath)
-	if err := renderMessage(substitutionPayload, templatePath); err != nil {
+	if err := renderMessage(substitutionPayload, templatePath, os.Stdout); err != nil {
 		return errlib.WrapFunc(err)
 	}
 
@@ -80,10 +81,10 @@ func cleanTitle(title string) string {
 	return strings.TrimSpace(removed)
 }
 
-func renderMessage(payload SubstitutionPayload, templatePath string) error {
+func renderMessage(payload SubstitutionPayload, templatePath string, out io.Writer) error {
 	t := template.Must(template.ParseFiles(templatePath))
 
-	err := t.Execute(os.Stdout, payload)
+	err := t.Execute(out, payload)
 	if err != nil {
 		return errlib.WrapFunc(err)
 	}
