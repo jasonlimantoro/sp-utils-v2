@@ -113,7 +113,7 @@ func initCommand(diRegistry *registry.Registry) Command {
 								Name:         "state",
 								Description:  "state of merge requests (e.g., opened, closed, merged, locked)",
 								Shorthand:    "s",
-								DefaultValue: "opened",
+								DefaultValue: "",
 								Required:     false,
 								Persistent:   false,
 							},
