@@ -210,7 +210,11 @@ func initCobra(command Command) *cobra.Command {
 		}
 
 		if flag.Required {
-			_ = cobraCmd.MarkFlagRequired(flag.Name)
+			if flag.Persistent {
+				_ = cobraCmd.MarkPersistentFlagRequired(flag.Name)
+			} else {
+				_ = cobraCmd.MarkFlagRequired(flag.Name)
+			}
 		}
 	}
 
