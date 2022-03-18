@@ -2,6 +2,7 @@ package reviewmergerequest
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -63,16 +64,33 @@ func constructSubstitutionPayload(repo string, reviewer string, mergeRequests []
 	firstMergeRequests := mergeRequests[0]
 	res.Description = cleanTitle(firstMergeRequests.Title)
 
+	jiraMap := map[string]string{}
 	repoName := getRepoName(repo)
+
 	for _, mr := range mergeRequests {
 		res.MergeRequests = append(res.MergeRequests, SubstitutionMergeRequest{
 			RepoName:     repoName,
 			TargetBranch: mr.TargetBranch,
 			Link:         mr.WebURL,
 		})
+		for _, jiraTicketID := range mr.GetRelatedJiraTickets() {
+			if _, ok := jiraMap[jiraTicketID]; !ok {
+				jiraMap[jiraTicketID] = buildJiraLink(jiraTicketID)
+			}
+		}
 	}
 
+	jiraLinks := []string{}
+	for _, link := range jiraMap {
+		jiraLinks = append(jiraLinks, link)
+	}
+	res.JiraLink = strings.Join(jiraLinks, ",")
+
 	return res
+}
+
+func buildJiraLink(jiraTicketID string) string {
+	return fmt.Sprintf("https://jira.shopee.io/browse/%s", jiraTicketID)
 }
 
 func cleanTitle(title string) string {
@@ -96,6 +114,7 @@ type SubstitutionPayload struct {
 	ReviewerUsername string
 	Description      string
 	MergeRequests    []SubstitutionMergeRequest
+	JiraLink         string
 	Footer           string
 }
 

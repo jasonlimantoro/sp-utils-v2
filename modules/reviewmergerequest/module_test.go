@@ -27,6 +27,7 @@ func Test_renderMessage(t *testing.T) {
 				payload: SubstitutionPayload{
 					ReviewerUsername: "shannon.wong",
 					Description:      "Test MR",
+					JiraLink:         "https://jira.shopee.io/browse/SPOT-36226",
 					MergeRequests: []SubstitutionMergeRequest{
 						{
 							RepoName:     "bridge",
@@ -51,6 +52,8 @@ func Test_renderMessage(t *testing.T) {
 - bridge|master: https://git.garena.com/shopee/pl/marketplace-payment/-/merge_requests/914
 - bridge|uat: https://git.garena.com/shopee/pl/marketplace-payment/-/merge_requests/913
 
+Jira: https://jira.shopee.io/browse/SPOT-36226
+
 Can also publish to master topic?
 
 Thank you! :capoo-thanks:
@@ -62,6 +65,7 @@ Thank you! :capoo-thanks:
 				payload: SubstitutionPayload{
 					ReviewerUsername: "shannon.wong",
 					Description:      "Test MR",
+					JiraLink:         "https://jira.shopee.io/browse/SPOT-36226",
 					MergeRequests: []SubstitutionMergeRequest{
 						{
 							RepoName:     "bridge",
@@ -84,6 +88,8 @@ Thank you! :capoo-thanks:
 
 - bridge|master: https://git.garena.com/shopee/pl/marketplace-payment/-/merge_requests/914
 - bridge|uat: https://git.garena.com/shopee/pl/marketplace-payment/-/merge_requests/913
+
+Jira: https://jira.shopee.io/browse/SPOT-36226
 
 Thank you! :capoo-thanks:
 `,

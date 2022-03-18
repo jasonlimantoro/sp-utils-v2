@@ -3,7 +3,8 @@ Hi @{{ .ReviewerUsername }}, please review the following:
 
 {{ range $i, $mr := .MergeRequests -}}
 - {{ $mr.RepoName }}|{{ $mr.TargetBranch }}: {{ $mr.Link }}
-{{ end -}}
+{{ end }}
+Jira: {{ .JiraLink }}
 {{ if .Footer }}
 {{ .Footer }}
 {{ end }}
