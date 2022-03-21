@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	createcardcmd "git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createcard"
+	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createcard"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createmergerequest"
-	listmergerequestcmd "git.garena.com/jason.limantoro/shopee-utils-v2/cmd/listmergerequest"
-	reviewmergerequestcmd "git.garena.com/jason.limantoro/shopee-utils-v2/cmd/reviewmergerequest"
+	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/listmergerequest"
+	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/reviewmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/registry"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/reviewmergerequest"
 )
