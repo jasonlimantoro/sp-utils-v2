@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createcard"
+	createlistcmd "git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createlist"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/listmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/reviewmergerequest"
@@ -201,6 +202,18 @@ func initCommand(diRegistry *registry.Registry) Command {
 							},
 						},
 						Runner: createcardcmd.NewRunner(diRegistry.CreateCardModule),
+					},
+					{
+						Name:        "create-list",
+						Description: "create a Trello list for next working day",
+						Flags: []Flag{
+							{
+								Name:        "operation-type",
+								Description: "0: today, 1: next working day",
+								Required:    true,
+							},
+						},
+						Runner: createlistcmd.NewRunner(diRegistry.CreateListModule),
 					},
 				},
 			},

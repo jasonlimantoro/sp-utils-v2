@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"git.garena.com/shopee/marketplace-payments/common/errlib"
+	"github.com/google/go-querystring/query"
 
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/config"
 )
@@ -18,7 +19,7 @@ var ErrHTTPStatusNon2xx = errors.New("err_http_status_non_2xx")
 
 type Accessor interface {
 	CreateCard(ctx context.Context, listID string, name string, description string) (*Card, error)
-	CreateList(ctx context.Context, boardID string, name string, pos int) (*List, error)
+	CreateList(ctx context.Context, boardID string, name string, pos float64) (*List, error)
 	GetList(ctx context.Context, boardID string) ([]*List, error)
 }
 
@@ -43,9 +44,19 @@ func (a accessor) CreateCard(ctx context.Context, listID string, name string, de
 	return res, nil
 }
 
-func (a accessor) CreateList(ctx context.Context, boardID string, name string, pos int) (*List, error) {
-	//TODO implement me
-	panic("implement me")
+func (a accessor) CreateList(ctx context.Context, boardID string, name string, pos float64) (*List, error) {
+	res := &List{}
+	req := &CreateListRequest{
+		Name: name,
+		Pos:  fmt.Sprintf("%.2f", pos),
+	}
+	q, _ := query.Values(req)
+
+	if err := a.postJSON(ctx, fmt.Sprintf(RouteCreateListOnBoard, boardID, q.Encode()), req, res); err != nil {
+		return nil, errlib.WrapFunc(err)
+	}
+
+	return res, nil
 }
 
 func (a accessor) GetList(ctx context.Context, boardID string) ([]*List, error) {

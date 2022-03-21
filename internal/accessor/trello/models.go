@@ -84,7 +84,7 @@ type List struct {
 	Name       string      `json:"name"`
 	Closed     bool        `json:"closed"`
 	IDBoard    string      `json:"idBoard"`
-	Pos        int         `json:"pos"`
+	Pos        float64     `json:"pos"`
 	Subscribed bool        `json:"subscribed"`
 	SoftLimit  interface{} `json:"softLimit"`
 }
@@ -92,4 +92,9 @@ type List struct {
 type CreateCardRequest struct {
 	Name string `json:"name"`
 	Desc string `json:"desc"`
+}
+
+type CreateListRequest struct {
+	Name string `json:"name"`
+	Pos  string `json:"pos"`
 }

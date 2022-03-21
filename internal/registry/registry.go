@@ -8,6 +8,7 @@ import (
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/manager/repository"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/manager/task"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/createcard"
+	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/createlist"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/createmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/listmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/reviewmergerequest"
@@ -18,6 +19,7 @@ type Registry struct {
 	ListMergeRequestModule   listmergerequest.Module
 	ReviewMergeRequestModule reviewmergerequest.Module
 	CreateCardModule         createcard.Module
+	CreateListModule         createlist.Module
 }
 
 func InitRegistry() *Registry {
@@ -34,6 +36,7 @@ func InitRegistry() *Registry {
 	reg.ListMergeRequestModule = listmergerequest.NewModule(repositoryDm)
 	reg.ReviewMergeRequestModule = reviewmergerequest.NewModule(repositoryDm)
 	reg.CreateCardModule = createcard.NewModule(taskDm)
+	reg.CreateListModule = createlist.NewModule(taskDm)
 
 	return reg
 }

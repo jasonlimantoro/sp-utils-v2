@@ -13,7 +13,7 @@ import (
 
 type Manager interface {
 	CreateInList(ctx context.Context, listName string, title string, jiraLink string, epicLink string, TDLink string, PRDLink string) error
-	CreateList(ctx context.Context, title string) error
+	CreateList(ctx context.Context, name string) error
 }
 
 type manager struct {
@@ -72,7 +72,20 @@ func jiraTicketIDFromLink(link string) string {
 	return match[1]
 }
 
-func (m manager) CreateList(ctx context.Context, title string) error {
-	//TODO implement me
-	panic("implement me")
+func (m manager) CreateList(ctx context.Context, name string) error {
+	lists, err := m.accessor.GetList(ctx, trello.BoardID)
+	if err != nil {
+		return errlib.WrapFunc(err)
+	}
+
+	firstListPos := lists[0].Pos
+	lastWorkingDayPos := lists[1].Pos
+	desiredPos := firstListPos + (lastWorkingDayPos-firstListPos)/2
+
+	_, err = m.accessor.CreateList(ctx, trello.BoardID, name, desiredPos)
+	if err != nil {
+		return errlib.WrapFunc(err)
+	}
+
+	return nil
 }
