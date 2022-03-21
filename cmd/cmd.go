@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"context"
+	"time"
 
 	"github.com/spf13/cobra"
 
+	createcardcmd "git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createcard"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createmergerequest"
 	listmergerequestcmd "git.garena.com/jason.limantoro/shopee-utils-v2/cmd/listmergerequest"
 	reviewmergerequestcmd "git.garena.com/jason.limantoro/shopee-utils-v2/cmd/reviewmergerequest"
@@ -150,6 +152,55 @@ func initCommand(diRegistry *registry.Registry) Command {
 							},
 						},
 						Runner: reviewmergerequestcmd.NewRunner(diRegistry.ReviewMergeRequestModule),
+					},
+				},
+			},
+			{
+				Name:        "daily-updates",
+				Description: "Daily Updates Commands",
+				SubCommands: []Command{
+					{
+						Name:        "create-card",
+						Description: "create a Trello card",
+						SubCommands: nil,
+						Flags: []Flag{
+							{
+								Name:        "title",
+								Description: "title of the card",
+								Shorthand:   "t",
+								Required:    true,
+							},
+							{
+								Name:         "list-name",
+								Description:  "list name the card will be created in",
+								Shorthand:    "l",
+								DefaultValue: time.Now().Format("02-Jan-2006"),
+								Required:     false,
+							},
+							{
+								Name:        "jira-link",
+								Description: "related jira ticket link (e.g. https://jira.shopee.io/browse/SPOT-1234)",
+								Shorthand:   "j",
+								Required:    false,
+							},
+							{
+								Name:        "epic-link",
+								Description: "epic ticket link (e.g. https://jira.shopee.io/browse/SPOT-1234)",
+								Shorthand:   "e",
+								Required:    false,
+							},
+							{
+								Name:        "td-link",
+								Description: "TD link",
+								Required:    false,
+							},
+							{
+								Name:        "prd-link",
+								Description: "PRD link",
+								Required:    false,
+							},
+						},
+						Runner: createcardcmd.NewRunner(diRegistry.CreateCardModule),
 					},
 				},
 			},
