@@ -52,8 +52,8 @@ func (a *Args) FromMap(flags map[string]string) *Args {
 	a.ListName = flags["list-name"]
 	a.JiraLink = flags["jira-link"]
 	a.EpicLink = flags["epic-link"]
-	a.PRDLink = flags["prd"]
-	a.TDLink = flags["td"]
+	a.PRDLink = flags["prd-link"]
+	a.TDLink = flags["td-link"]
 
 	return a
 }
