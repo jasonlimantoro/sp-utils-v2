@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"git.garena.com/shopee/marketplace-payments/common/errlib"
+	"github.com/sirupsen/logrus"
 
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/manager/task"
 )
@@ -13,11 +14,12 @@ type Module interface {
 }
 
 type module struct {
+	logger  *logrus.Logger
 	manager task.Manager
 }
 
 func (m module) Do(ctx context.Context, args *Args) error {
-	err := m.manager.CreateInList(
+	card, err := m.manager.CreateInList(
 		ctx,
 		args.ListName,
 		args.Title,
@@ -31,11 +33,16 @@ func (m module) Do(ctx context.Context, args *Args) error {
 		return errlib.WrapFunc(err)
 	}
 
+	m.logger.WithFields(logrus.Fields{
+		"name": card.Name,
+		"url":  card.URL,
+	}).Info("created")
+
 	return nil
 }
 
-func NewModule(manager task.Manager) *module {
-	return &module{manager: manager}
+func NewModule(manager task.Manager, logger *logrus.Logger) *module {
+	return &module{manager: manager, logger: logger}
 }
 
 type Args struct {

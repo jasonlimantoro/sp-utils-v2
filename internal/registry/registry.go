@@ -3,6 +3,8 @@ package registry
 import (
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/accessor/gitlab"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/accessor/trello"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/manager/repository"
@@ -24,6 +26,11 @@ type Registry struct {
 
 func InitRegistry() *Registry {
 	reg := &Registry{}
+	logrusLogger := logrus.New()
+	logrusLogger.SetFormatter(&logrus.TextFormatter{
+		DisableColors: true,
+		FullTimestamp: true,
+	})
 
 	httpClient := &http.Client{}
 	gitlabAccessor := gitlab.NewAccessor(httpClient)
@@ -35,8 +42,8 @@ func InitRegistry() *Registry {
 	reg.CreateMergeRequestModule = createmergerequest.NewModule(repositoryDm)
 	reg.ListMergeRequestModule = listmergerequest.NewModule(repositoryDm)
 	reg.ReviewMergeRequestModule = reviewmergerequest.NewModule(repositoryDm)
-	reg.CreateCardModule = createcard.NewModule(taskDm)
-	reg.CreateListModule = createlist.NewModule(taskDm)
+	reg.CreateCardModule = createcard.NewModule(taskDm, logrusLogger)
+	reg.CreateListModule = createlist.NewModule(taskDm, logrusLogger)
 
 	return reg
 }

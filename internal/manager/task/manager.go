@@ -12,8 +12,8 @@ import (
 )
 
 type Manager interface {
-	CreateInList(ctx context.Context, listName string, title string, jiraLink string, epicLink string, TDLink string, PRDLink string) error
-	CreateList(ctx context.Context, name string) error
+	CreateInList(ctx context.Context, listName string, title string, jiraLink string, epicLink string, TDLink string, PRDLink string) (*Task, error)
+	CreateList(ctx context.Context, name string) (*List, error)
 }
 
 type manager struct {
@@ -24,11 +24,11 @@ func NewManager(accessor trello.Accessor) *manager {
 	return &manager{accessor: accessor}
 }
 
-func (m manager) CreateInList(ctx context.Context, listName string, title string, jiraLink string, epicLink string, TDLink string, PRDLink string) error {
+func (m manager) CreateInList(ctx context.Context, listName string, title string, jiraLink string, epicLink string, TDLink string, PRDLink string) (*Task, error) {
 	var list *trello.List
 	lists, err := m.accessor.GetList(ctx, trello.BoardID)
 	if err != nil {
-		return errlib.WrapFunc(err)
+		return nil, errlib.WrapFunc(err)
 	}
 	for _, v := range lists {
 		if v.Name == listName {
@@ -38,12 +38,15 @@ func (m manager) CreateInList(ctx context.Context, listName string, title string
 
 	description := m.buildDescription(jiraLink, epicLink, TDLink, PRDLink)
 	name := fmt.Sprintf("[%s]%s", strings.ToUpper(jiraTicketIDFromLink(jiraLink)), title)
-	_, err = m.accessor.CreateCard(ctx, list.ID, name, description)
+	card, err := m.accessor.CreateCard(ctx, list.ID, name, description)
 	if err != nil {
-		return errlib.WrapFunc(err)
+		return nil, errlib.WrapFunc(err)
 	}
 
-	return nil
+	return &Task{
+		Name: card.Name,
+		URL:  card.URL,
+	}, nil
 }
 
 func (m manager) buildDescription(jiraLink string, epicLink string, TDLink string, PRDLink string) string {
@@ -72,20 +75,23 @@ func jiraTicketIDFromLink(link string) string {
 	return match[1]
 }
 
-func (m manager) CreateList(ctx context.Context, name string) error {
+func (m manager) CreateList(ctx context.Context, name string) (*List, error) {
 	lists, err := m.accessor.GetList(ctx, trello.BoardID)
 	if err != nil {
-		return errlib.WrapFunc(err)
+		return nil, errlib.WrapFunc(err)
 	}
 
 	firstListPos := lists[0].Pos
 	lastWorkingDayPos := lists[1].Pos
 	desiredPos := firstListPos + (lastWorkingDayPos-firstListPos)/2
 
-	_, err = m.accessor.CreateList(ctx, trello.BoardID, name, desiredPos)
+	list, err := m.accessor.CreateList(ctx, trello.BoardID, name, desiredPos)
 	if err != nil {
-		return errlib.WrapFunc(err)
+		return nil, errlib.WrapFunc(err)
 	}
 
-	return nil
+	return &List{
+		Name: list.Name,
+		Pos:  list.Pos,
+	}, nil
 }
