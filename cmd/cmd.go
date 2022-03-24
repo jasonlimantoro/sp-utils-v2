@@ -11,6 +11,7 @@ import (
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/listmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/reviewmergerequest"
+	syncrepocmd "git.garena.com/jason.limantoro/shopee-utils-v2/cmd/syncrepo"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/registry"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/reviewmergerequest"
 )
@@ -214,6 +215,34 @@ func initCommand(diRegistry *registry.Registry) Command {
 							},
 						},
 						Runner: createlistcmd.NewRunner(diRegistry.CreateListModule),
+					},
+				},
+			},
+			{
+				Name:        "repo",
+				Description: "Repo commands",
+				SubCommands: []Command{
+					{
+						Name:        "sync",
+						Description: "sync specified branches against remote",
+						SubCommands: nil,
+						Flags: []Flag{
+							{
+								Name:        "directory",
+								Description: "git working directory",
+								Shorthand:   "d",
+								Required:    true,
+								Persistent:  false,
+							},
+							{
+								Name:        "branch",
+								Description: "branches to sync",
+								Shorthand:   "b",
+								Required:    true,
+								Persistent:  false,
+							},
+						},
+						Runner: syncrepocmd.NewRunner(diRegistry.SyncRepoModule),
 					},
 				},
 			},
