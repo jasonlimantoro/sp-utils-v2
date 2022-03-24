@@ -228,9 +228,9 @@ func initCommand(diRegistry *registry.Registry) Command {
 						SubCommands: nil,
 						Flags: []Flag{
 							{
-								Name:        "directory",
-								Description: "git working directory",
-								Shorthand:   "d",
+								Name:        "root",
+								Description: "root directories containing git repositories",
+								Shorthand:   "r",
 								Required:    true,
 								Persistent:  false,
 							},

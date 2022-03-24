@@ -3,7 +3,10 @@ package syncrepo
 import (
 	"context"
 	"errors"
+	"io/fs"
+	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"git.garena.com/shopee/marketplace-payments/common/errlib"
@@ -51,7 +54,8 @@ func NewModule(logger *logrus.Logger) *module {
 func (m module) Do(ctx context.Context, args *Args) error {
 	start := time.Now()
 	cmdLogger := m.logger.WithFields(logrus.Fields{
-		"directory": args.Directory,
+		"root":     args.Root,
+		"branches": args.Branches,
 	})
 	cmdLogger.Info("start")
 
@@ -62,7 +66,80 @@ func (m module) Do(ctx context.Context, args *Args) error {
 		}).Info("ended")
 	}()
 
-	r, err := git.PlainOpen(args.Directory)
+	allRepositories := []string{}
+	for _, root := range args.Root {
+		repositories, err := findRepositories(root)
+		if err != nil {
+			return errlib.WrapFunc(err)
+		}
+		allRepositories = append(allRepositories, repositories...)
+	}
+
+	m.logger.Infof("repositories: %+v", allRepositories)
+
+	wg := &sync.WaitGroup{}
+	errChan := make(chan error)
+	doneChan := make(chan bool)
+
+	wg.Add(len(allRepositories))
+
+	for _, repository := range allRepositories {
+		go func(repository string) {
+			defer wg.Done()
+			if err := m.process(ctx, repository, args.Branches); err != nil {
+				errChan <- errlib.WithFields(err, errlib.Fields{
+					"repository": repository,
+				})
+			}
+		}(repository)
+	}
+
+	go func() {
+		wg.Wait()
+		close(doneChan)
+	}()
+
+	for i := 0; i < len(allRepositories); i++ {
+		select {
+		case err := <-errChan:
+			m.logger.WithError(err).Error("error processing")
+			break
+		case <-doneChan:
+			break
+		}
+	}
+
+	return nil
+}
+
+func findRepositories(rootDirectory string) ([]string, error) {
+	res := []string{}
+	err := filepath.WalkDir(rootDirectory, func(path string, d fs.DirEntry, err error) error {
+		_, plainOpenErr := git.PlainOpen(path)
+		if plainOpenErr == nil {
+			res = append(res, path)
+			return filepath.SkipDir
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errlib.WrapFunc(err)
+	}
+
+	return res, nil
+}
+
+func (m module) process(ctx context.Context, directoryPath string, branches []string) error {
+	directoryLogger := m.logger.WithFields(logrus.Fields{
+		"directory": directoryPath,
+	})
+
+	r, err := git.PlainOpen(directoryPath)
+	if errors.Is(err, git.ErrRepositoryNotExists) {
+		directoryLogger.WithError(err).Warn("Skipping directory")
+		return nil
+	}
+
 	if err != nil {
 		return errlib.WrapFunc(err)
 	}
@@ -78,22 +155,29 @@ func (m module) Do(ctx context.Context, args *Args) error {
 	}
 
 	shouldSync := true
-	for _, fs := range status {
-		isFileStatusAllowed := stagingStatusAllowed[fs.Staging] && worktreeStatusAllowed[fs.Worktree]
+	for _, s := range status {
+		isFileStatusAllowed := stagingStatusAllowed[s.Staging] && worktreeStatusAllowed[s.Worktree]
 		if !isFileStatusAllowed {
 			shouldSync = false
 		}
 	}
 
-	cmdLogger.Infof("shouldSync=%v", shouldSync)
+	directoryLogger.Infof("shouldSync=%v", shouldSync)
 
 	if shouldSync {
-		for _, branch := range args.Branches {
-			branchLogger := cmdLogger.WithField("branch", branch)
+		for _, branch := range branches {
+			branchLogger := directoryLogger.WithField("branch", branch)
 
-			branchLogger.Infof("[start] git checkout")
+			branchLogger.Info("[start] git checkout")
 			if err := w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName(branch)}); err != nil {
-				return errlib.WrapFunc(err)
+				if errors.Is(err, plumbing.ErrReferenceNotFound) {
+					branchLogger.Warn("[warn] git checkout: branch not found")
+					continue
+				}
+
+				return errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
+					"branch": branch,
+				}))
 			}
 			branchLogger.Info("[success] git checkout")
 
@@ -104,9 +188,11 @@ func (m module) Do(ctx context.Context, args *Args) error {
 				ReferenceName: plumbing.NewBranchReferenceName(branch),
 			}); err != nil {
 				if errors.Is(err, git.NoErrAlreadyUpToDate) {
-					branchLogger.Info("git pull origin: already up to date")
+					branchLogger.Warn("[warn] git pull origin: already up to date")
 				} else {
-					return errlib.WrapFunc(err)
+					return errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
+						"branch": branch,
+					}))
 				}
 			}
 
@@ -115,7 +201,6 @@ func (m module) Do(ctx context.Context, args *Args) error {
 			branchLogger.WithFields(logrus.Fields{
 				"elapsed": elapsed.Seconds(),
 			}).Info("[success] git pull origin")
-
 		}
 	}
 
@@ -123,12 +208,12 @@ func (m module) Do(ctx context.Context, args *Args) error {
 }
 
 type Args struct {
-	Directory string
-	Branches  []string
+	Root     []string
+	Branches []string
 }
 
 func (a *Args) FromMap(flags map[string]string) *Args {
-	a.Directory = flags["directory"]
+	a.Root = strings.Split(flags["root"], ",")
 	a.Branches = strings.Split(flags["branch"], ",")
 
 	return a
