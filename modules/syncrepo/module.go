@@ -189,6 +189,7 @@ func (m module) process(ctx context.Context, repositoryPath string, branches []s
 			branchLogger.WithFields(logrus.Fields{
 				"elapsed": elapsed.Seconds(),
 				"command": "git pull",
+				"result":  string(out),
 			}).Info("success")
 		}
 
