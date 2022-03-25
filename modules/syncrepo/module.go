@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -11,7 +12,6 @@ import (
 
 	"git.garena.com/shopee/marketplace-payments/common/errlib"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/sirupsen/logrus"
 )
 
@@ -139,10 +139,15 @@ func (m module) process(ctx context.Context, directoryPath string, branches []st
 		directoryLogger.WithError(err).Warn("Skipping directory")
 		return nil
 	}
-
 	if err != nil {
 		return errlib.WrapFunc(err)
 	}
+
+	h, err := r.Head()
+	if err != nil {
+		return errlib.WrapFunc(err)
+	}
+	initialBranch := h.Name().Short()
 
 	w, err := r.Worktree()
 	if err != nil {
@@ -169,12 +174,10 @@ func (m module) process(ctx context.Context, directoryPath string, branches []st
 			branchLogger := directoryLogger.WithField("branch", branch)
 
 			branchLogger.Info("[start] git checkout")
-			if err := w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName(branch)}); err != nil {
-				if errors.Is(err, plumbing.ErrReferenceNotFound) {
-					branchLogger.Warn("[warn] git checkout: branch not found")
-					continue
-				}
-
+			// Note: the checkout implementation of go-git is different from that of git.
+			// Open issue: https://github.com/src-d/go-git/issues/1026
+			_, err := exec.Command("git", "-C", directoryPath, "checkout", branch).Output()
+			if err != nil {
 				return errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
 					"branch": branch,
 				}))
@@ -183,25 +186,32 @@ func (m module) process(ctx context.Context, directoryPath string, branches []st
 
 			branchLogger.Info("[start] git pull origin")
 			start := time.Now()
-			if err := w.PullContext(ctx, &git.PullOptions{
-				RemoteName:    "origin",
-				ReferenceName: plumbing.NewBranchReferenceName(branch),
-			}); err != nil {
-				if errors.Is(err, git.NoErrAlreadyUpToDate) {
-					branchLogger.Warn("[warn] git pull origin: already up to date")
-				} else {
-					return errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
-						"branch": branch,
-					}))
-				}
+			// Note: the pull implementation of go-git is super slow
+			if _, err = exec.Command("git", "-C", directoryPath, "pull").Output(); err != nil {
+				return errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
+					"branch": branch,
+				}))
 			}
-
 			elapsed := time.Since(start)
-
 			branchLogger.WithFields(logrus.Fields{
 				"elapsed": elapsed.Seconds(),
 			}).Info("[success] git pull origin")
 		}
+
+		directoryLogger.WithFields(logrus.Fields{
+			"branch": initialBranch,
+		}).Info("[start] git checkout <initial_branch>")
+
+		_, err := exec.Command("git", "-C", directoryPath, "checkout", initialBranch).Output()
+		if err != nil {
+			return errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
+				"directory": directoryPath,
+			}))
+		}
+
+		directoryLogger.WithFields(logrus.Fields{
+			"branch": initialBranch,
+		}).Info("[success] git checkout <initial_branch>")
 	}
 
 	return nil
