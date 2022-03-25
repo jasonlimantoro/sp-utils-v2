@@ -78,36 +78,18 @@ func (m module) Do(ctx context.Context, args *Args) error {
 	m.logger.Infof("repositories: %+v", allRepositories)
 
 	wg := &sync.WaitGroup{}
-	errChan := make(chan error)
-	doneChan := make(chan bool)
-
 	wg.Add(len(allRepositories))
-
 	for _, repository := range allRepositories {
 		go func(repository string) {
 			defer wg.Done()
 			if err := m.process(ctx, repository, args.Branches); err != nil {
-				errChan <- errlib.WithFields(err, errlib.Fields{
+				m.logger.WithError(errlib.WithFields(err, errlib.Fields{
 					"repository": repository,
-				})
+				})).Error("error processing")
 			}
 		}(repository)
 	}
-
-	go func() {
-		wg.Wait()
-		close(doneChan)
-	}()
-
-	for i := 0; i < len(allRepositories); i++ {
-		select {
-		case err := <-errChan:
-			m.logger.WithError(err).Error("error processing")
-			break
-		case <-doneChan:
-			break
-		}
-	}
+	wg.Wait()
 
 	return nil
 }
@@ -176,10 +158,12 @@ func (m module) process(ctx context.Context, directoryPath string, branches []st
 			branchLogger.Info("[start] git checkout")
 			// Note: the checkout implementation of go-git is different from that of git.
 			// Open issue: https://github.com/src-d/go-git/issues/1026
-			_, err := exec.Command("git", "-C", directoryPath, "checkout", branch).Output()
+			out, err := exec.Command("git", "-C", directoryPath, "checkout", branch).CombinedOutput()
 			if err != nil {
 				return errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
-					"branch": branch,
+					"command": "git checkout",
+					"branch":  branch,
+					"out":     string(out),
 				}))
 			}
 			branchLogger.Info("[success] git checkout")
@@ -187,9 +171,11 @@ func (m module) process(ctx context.Context, directoryPath string, branches []st
 			branchLogger.Info("[start] git pull origin")
 			start := time.Now()
 			// Note: the pull implementation of go-git is super slow
-			if _, err = exec.Command("git", "-C", directoryPath, "pull").Output(); err != nil {
+			if out, err = exec.Command("git", "-C", directoryPath, "pull").CombinedOutput(); err != nil {
 				return errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
-					"branch": branch,
+					"branch":  branch,
+					"command": "git pull",
+					"out":     string(out),
 				}))
 			}
 			elapsed := time.Since(start)
@@ -202,10 +188,13 @@ func (m module) process(ctx context.Context, directoryPath string, branches []st
 			"branch": initialBranch,
 		}).Info("[start] git checkout <initial_branch>")
 
-		_, err := exec.Command("git", "-C", directoryPath, "checkout", initialBranch).Output()
+		out, err := exec.Command("git", "-C", directoryPath, "checkout", initialBranch).CombinedOutput()
 		if err != nil {
 			return errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
 				"directory": directoryPath,
+				"command":   "git checkout",
+				"branch":    initialBranch,
+				"out":       string(out),
 			}))
 		}
 
