@@ -231,7 +231,14 @@ func initCommand(diRegistry *registry.Registry) Command {
 								Name:        "root",
 								Description: "root directories containing git repositories",
 								Shorthand:   "r",
-								Required:    true,
+								Required:    false,
+								Persistent:  false,
+							},
+							{
+								Name:        "root-file",
+								Description: "csv file containing root dirs",
+								Shorthand:   "",
+								Required:    false,
 								Persistent:  false,
 							},
 							{

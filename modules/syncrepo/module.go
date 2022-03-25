@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"io/ioutil"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -219,9 +220,23 @@ type Args struct {
 	Branches []string
 }
 
-func (a *Args) FromMap(flags map[string]string) *Args {
+func (a *Args) FromMap(flags map[string]string) (*Args, error) {
 	a.Root = strings.Split(flags["root"], ",")
 	a.Branches = strings.Split(flags["branch"], ",")
 
-	return a
+	rootFile := flags["root-file"]
+	if rootFile != "" {
+		path, err := filepath.Abs(rootFile)
+		if err != nil {
+			return nil, errlib.WrapFunc(err)
+		}
+		content, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, errlib.WrapFunc(err)
+		}
+		rootDirs := strings.Split(string(content), "\n")
+		a.Root = append(a.Root, rootDirs...)
+	}
+
+	return a, nil
 }
