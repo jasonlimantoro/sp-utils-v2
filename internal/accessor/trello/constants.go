@@ -7,4 +7,6 @@ const (
 	RouteGetListOnBoard    = "boards/%s/lists"
 	RouteCreateCardOnList  = "lists/%s/cards"
 	RouteCreateListOnBoard = "boards/%s/lists?%s"
+	RouteGetCardsOnList    = "lists/%s/cards"
+	RouteGetCardActions    = "cards/%s/actions?%s"
 )

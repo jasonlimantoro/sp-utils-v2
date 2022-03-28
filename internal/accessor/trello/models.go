@@ -98,3 +98,69 @@ type CreateListRequest struct {
 	Name string `json:"name"`
 	Pos  string `json:"pos"`
 }
+
+type GetCardActionsRequest struct {
+	CardID string
+	Filter string `url:"filter"`
+}
+
+type CardAction struct {
+	ID              string `json:"id"`
+	IDMemberCreator string `json:"idMemberCreator"`
+	Data            struct {
+		Text     string `json:"text"`
+		TextData struct {
+			Emoji struct {
+			} `json:"emoji"`
+		} `json:"textData"`
+		Card struct {
+			ID        string `json:"id"`
+			Name      string `json:"name"`
+			IDShort   int    `json:"idShort"`
+			ShortLink string `json:"shortLink"`
+		} `json:"card"`
+		Board struct {
+			ID        string `json:"id"`
+			Name      string `json:"name"`
+			ShortLink string `json:"shortLink"`
+		} `json:"board"`
+		List struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		} `json:"list"`
+	} `json:"data"`
+	AppCreator interface{} `json:"appCreator"`
+	Type       string      `json:"type"`
+	Date       time.Time   `json:"date"`
+	Limits     struct {
+		Reactions struct {
+			PerAction struct {
+				Status    string `json:"status"`
+				DisableAt int    `json:"disableAt"`
+				WarnAt    int    `json:"warnAt"`
+			} `json:"perAction"`
+			UniquePerAction struct {
+				Status    string `json:"status"`
+				DisableAt int    `json:"disableAt"`
+				WarnAt    int    `json:"warnAt"`
+			} `json:"uniquePerAction"`
+		} `json:"reactions"`
+	} `json:"limits"`
+	MemberCreator struct {
+		ID               string      `json:"id"`
+		ActivityBlocked  bool        `json:"activityBlocked"`
+		AvatarHash       interface{} `json:"avatarHash"`
+		AvatarURL        interface{} `json:"avatarUrl"`
+		FullName         string      `json:"fullName"`
+		IDMemberReferrer string      `json:"idMemberReferrer"`
+		Initials         string      `json:"initials"`
+		NonPublic        struct {
+		} `json:"nonPublic"`
+		NonPublicAvailable bool   `json:"nonPublicAvailable"`
+		Username           string `json:"username"`
+	} `json:"memberCreator"`
+}
+
+const (
+	ActionCommentCard = "commentCard"
+)

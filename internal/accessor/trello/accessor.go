@@ -21,6 +21,8 @@ type Accessor interface {
 	CreateCard(ctx context.Context, listID string, name string, description string) (*Card, error)
 	CreateList(ctx context.Context, boardID string, name string, pos float64) (*List, error)
 	GetList(ctx context.Context, boardID string) ([]*List, error)
+	GetCards(ctx context.Context, listID string) ([]*Card, error)
+	GetCardActions(ctx context.Context, request *GetCardActionsRequest) ([]*CardAction, error)
 }
 
 type accessor struct {
@@ -63,6 +65,26 @@ func (a accessor) GetList(ctx context.Context, boardID string) ([]*List, error) 
 	res := []*List{}
 
 	if err := a.getJSON(ctx, fmt.Sprintf(RouteGetListOnBoard, boardID), &res); err != nil {
+		return nil, errlib.WrapFunc(err)
+	}
+
+	return res, nil
+}
+
+func (a accessor) GetCards(ctx context.Context, listID string) ([]*Card, error) {
+	res := []*Card{}
+	if err := a.getJSON(ctx, fmt.Sprintf(RouteGetCardsOnList, listID), &res); err != nil {
+		return nil, errlib.WrapFunc(err)
+	}
+
+	return res, nil
+}
+
+func (a accessor) GetCardActions(ctx context.Context, req *GetCardActionsRequest) ([]*CardAction, error) {
+	res := []*CardAction{}
+	q, _ := query.Values(req)
+
+	if err := a.getJSON(ctx, fmt.Sprintf(RouteGetCardActions, req.CardID, q.Encode()), &res); err != nil {
 		return nil, errlib.WrapFunc(err)
 	}
 

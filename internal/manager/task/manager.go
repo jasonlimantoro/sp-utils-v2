@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"git.garena.com/shopee/marketplace-payments/common/errlib"
 
@@ -14,6 +15,7 @@ import (
 type Manager interface {
 	CreateInList(ctx context.Context, listName string, title string, jiraLink string, epicLink string, TDLink string, PRDLink string) (*Task, error)
 	CreateList(ctx context.Context, name string) (*List, error)
+	GetWeeklyUpdates(ctx context.Context, startDate time.Time) (map[JiraIssue][]string, error)
 }
 
 type manager struct {
@@ -94,4 +96,69 @@ func (m manager) CreateList(ctx context.Context, name string) (*List, error) {
 		Name: list.Name,
 		Pos:  list.Pos,
 	}, nil
+}
+
+func (m manager) GetWeeklyUpdates(ctx context.Context, startDate time.Time) (map[JiraIssue][]string, error) {
+	lists, err := m.accessor.GetList(ctx, trello.BoardID)
+	if err != nil {
+		return nil, errlib.WrapFunc(err)
+	}
+	weekStringsMap := generateWeekStringMap(startDate)
+	jiraIDToUpdates := make(map[JiraIssue][]string)
+
+	for i := range lists {
+		list := lists[len(lists)-1-i]
+		if _, ok := weekStringsMap[list.Name]; ok {
+			cards, err := m.accessor.GetCards(ctx, list.ID)
+			if err != nil {
+				return nil, errlib.WrapFunc(err)
+			}
+
+			for _, card := range cards {
+				jiraIssue := (JiraIssue{}).FromCardTitle(card.Name)
+				comments, err := m.accessor.GetCardActions(ctx, &trello.GetCardActionsRequest{
+					CardID: card.ID,
+					Filter: trello.ActionCommentCard,
+				})
+
+				if err != nil {
+					return nil, errlib.WrapFunc(err)
+				}
+
+				for _, comment := range comments {
+					message := getMessageFromUpdateComment(comment.Data.Text)
+					if len(message) > 0 {
+						if _, ok := jiraIDToUpdates[jiraIssue]; !ok {
+							jiraIDToUpdates[jiraIssue] = []string{message}
+						} else {
+							jiraIDToUpdates[jiraIssue] = append(jiraIDToUpdates[jiraIssue], message)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return jiraIDToUpdates, nil
+}
+
+func getMessageFromUpdateComment(text string) string {
+	re := regexp.MustCompile(`(?i)UPDATE: (.*)`)
+	matches := re.FindStringSubmatch(text)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
+}
+
+func generateWeekStringMap(startDate time.Time) map[string]bool {
+	res := map[string]bool{}
+
+	for deltaDay := 0; deltaDay < 5; deltaDay++ {
+		currentDate := startDate.AddDate(0, 0, deltaDay)
+		currentDateString := currentDate.Format("02-Jan-2006")
+		res[currentDateString] = true
+	}
+
+	return res
 }

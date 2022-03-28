@@ -7,11 +7,12 @@ import (
 	"github.com/spf13/cobra"
 
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createcard"
-	createlistcmd "git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createlist"
+	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createlist"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createmergerequest"
+	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/getweeklyupdates"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/listmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/reviewmergerequest"
-	syncrepocmd "git.garena.com/jason.limantoro/shopee-utils-v2/cmd/syncrepo"
+	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/syncrepo"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/registry"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/reviewmergerequest"
 )
@@ -215,6 +216,33 @@ func initCommand(diRegistry *registry.Registry) Command {
 							},
 						},
 						Runner: createlistcmd.NewRunner(diRegistry.CreateListModule),
+					},
+					{
+						Name:        "get",
+						Description: "Get weekly updates",
+						SubCommands: nil,
+						Flags: []Flag{
+							{
+								Name:         "delta-week",
+								Description:  "Delta week from now (0: current week, 1: last week)",
+								DefaultValue: "0",
+							},
+							{
+								Name:        "template",
+								Description: "template file path",
+								Shorthand:   "t",
+								Required:    true,
+								Persistent:  false,
+							},
+							{
+								Name:        "out",
+								Description: "output file",
+								Shorthand:   "o",
+								Required:    false,
+								Persistent:  false,
+							},
+						},
+						Runner: getweeklyupdatescmd.NewRunner(diRegistry.GetWeeklyUpdates),
 					},
 				},
 			},

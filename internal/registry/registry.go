@@ -12,6 +12,7 @@ import (
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/createcard"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/createlist"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/createmergerequest"
+	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/getweeklyupdates"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/listmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/reviewmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/syncrepo"
@@ -24,6 +25,7 @@ type Registry struct {
 	CreateCardModule         createcard.Module
 	CreateListModule         createlist.Module
 	SyncRepoModule           syncrepo.Module
+	GetWeeklyUpdates         getweeklyupdates.Module
 }
 
 func InitRegistry() *Registry {
@@ -47,6 +49,7 @@ func InitRegistry() *Registry {
 	reg.CreateCardModule = createcard.NewModule(taskDm, logrusLogger)
 	reg.CreateListModule = createlist.NewModule(taskDm, logrusLogger)
 	reg.SyncRepoModule = syncrepo.NewModule(logrusLogger)
+	reg.GetWeeklyUpdates = getweeklyupdates.NewModule(taskDm, logrusLogger)
 
 	return reg
 }
