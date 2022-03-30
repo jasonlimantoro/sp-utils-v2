@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	TargetBranchToCompare = []string{"test", "uat", "master"}
+	TargetBranchToCompare = []string{"test", "uat", "master", "staging"}
 )
 
 type Module interface {
