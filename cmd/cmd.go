@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createcard"
+	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createdraft"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createlist"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/getweeklyupdates"
@@ -243,6 +244,20 @@ func initCommand(diRegistry *registry.Registry) Command {
 							},
 						},
 						Runner: getweeklyupdatescmd.NewRunner(diRegistry.GetWeeklyUpdates),
+					},
+					{
+						Name:        "create-draft",
+						Description: "Create Gmail Draft",
+						Flags: []Flag{
+							{
+								Name:         "input-file",
+								Description:  "Input markdown file",
+								Shorthand:    "i",
+								DefaultValue: "",
+								Required:     true,
+							},
+						},
+						Runner: createdraftcmd.NewRunner(diRegistry.CreateDraftModule),
 					},
 				},
 			},

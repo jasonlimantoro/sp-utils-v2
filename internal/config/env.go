@@ -13,3 +13,11 @@ func GetTrelloAPIKey() string {
 func GetTrelloAPIToken() string {
 	return os.Getenv("TRELLO_API_TOKEN")
 }
+
+func GetGmailCredentials() string {
+	return os.Getenv("GMAIL_CREDENTIALS")
+}
+
+func GetGmailToken() string {
+	return os.Getenv("GMAIL_TOKEN")
+}
