@@ -38,9 +38,10 @@ func Test_renderMessage(t *testing.T) {
 						}: {"update 3", "update 4"},
 					},
 				},
-				templatePath: absPath("email.tpl"),
+				templatePath: absPath("draft.tpl"),
 			},
 			wantOut: `**What I have done this week**
+
 - [Jira Task 1](https://jira.shopee.io/browse/SPOT-1234)
   - update 1
   - update 2
@@ -49,6 +50,7 @@ func Test_renderMessage(t *testing.T) {
   - update 4
 
 **What I will do next working week**
+
 - [Jira Task 1](https://jira.shopee.io/browse/SPOT-1234)
 - [Jira Task 2](https://jira.shopee.io/browse/SPOT-2345)
 `,
