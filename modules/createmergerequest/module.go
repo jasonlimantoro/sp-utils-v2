@@ -23,8 +23,8 @@ func NewModule(repositorydm repository.Manager) *module {
 }
 
 func (m module) Do(ctx context.Context, args *Args) error {
-	// Get Project ID of the Repository name
-	repoDetail, err := m.repositorydm.GetByName(ctx, args.Repository)
+	repositoryPath := repository.RepoToPathMapping[args.Repository]
+	repoDetail, err := m.repositorydm.GetByName(ctx, repositoryPath)
 	if err != nil {
 		return errlib.WrapFunc(err)
 	}
