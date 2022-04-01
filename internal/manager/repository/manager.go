@@ -69,7 +69,11 @@ func (m manager) CreateMergeRequest(
 	}
 
 	return &MergeRequest{
-		res,
+		Title:        res.Title,
+		WebURL:       res.WebURL,
+		TargetBranch: res.TargetBranch,
+		SourceBranch: res.SourceBranch,
+		State:        res.State,
 	}, nil
 }
 
@@ -87,7 +91,13 @@ func (m manager) ListMergeRequests(ctx context.Context, projectID int, jiraTicke
 	res := []*MergeRequest{}
 	for _, mr := range myMergeRequests {
 		if titleContainsJiraTickets(mr.Title, jiraTicketIDs) {
-			res = append(res, &MergeRequest{mr})
+			res = append(res, &MergeRequest{
+				Title:        mr.Title,
+				WebURL:       mr.WebURL,
+				TargetBranch: mr.TargetBranch,
+				SourceBranch: mr.SourceBranch,
+				State:        mr.State,
+			})
 		}
 	}
 

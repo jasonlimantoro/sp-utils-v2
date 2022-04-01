@@ -32,17 +32,30 @@ func NewModule(repositorydm repository.Manager) *module {
 }
 
 func (m module) Do(ctx context.Context, args *Args) error {
-	repoData, err := m.repositorydm.GetByName(ctx, args.Repository)
-	if err != nil {
-		return errlib.WrapFunc(err)
+	substitutionMergeRequests := []SubstitutionMergeRequest{}
+	for _, repoShortName := range args.Repositories {
+		repoData, err := m.repositorydm.GetByName(ctx, repository.RepoToPathMapping[repoShortName])
+		if err != nil {
+			return errlib.WrapFunc(err)
+		}
+
+		mergeRequests, err := m.repositorydm.ListMergeRequests(ctx, repoData.ProjectID, args.JiraTicketIDs, "opened")
+		if err != nil {
+			return errlib.WrapFunc(err)
+		}
+
+		for _, mr := range mergeRequests {
+			substitutionMergeRequests = append(substitutionMergeRequests, SubstitutionMergeRequest{
+				Title:        mr.Title,
+				TargetBranch: mr.TargetBranch,
+				Link:         mr.WebURL,
+				RepoName:     repoShortName,
+			})
+		}
+
 	}
 
-	mergeRequests, err := m.repositorydm.ListMergeRequests(ctx, repoData.ProjectID, args.JiraTicketIDs, "opened")
-	if err != nil {
-		return errlib.WrapFunc(err)
-	}
-
-	substitutionPayload := constructSubstitutionPayload(args.Repository, "", mergeRequests)
+	substitutionPayload := constructSubstitutionPayload("", substitutionMergeRequests)
 
 	templatePath, _ := filepath.Abs(args.TemplateFilePath)
 	if err := renderMessage(substitutionPayload, templatePath, os.Stdout); err != nil {
@@ -52,28 +65,21 @@ func (m module) Do(ctx context.Context, args *Args) error {
 	return nil
 }
 
-func constructSubstitutionPayload(repo string, reviewer string, mergeRequests []*repository.MergeRequest) SubstitutionPayload {
-	res := SubstitutionPayload{}
+func constructSubstitutionPayload(reviewer string, smrs []SubstitutionMergeRequest) SubstitutionPayload {
+	if len(smrs) == 0 {
+		return SubstitutionPayload{}
+	}
+
+	firstMergeRequest := smrs[0]
 
 	finalReviewer := reviewer
 	if finalReviewer == "" {
-		finalReviewer = repoToRecommendedReviewerMapping[repo][0]
+		finalReviewer = repoToRecommendedReviewerMapping[firstMergeRequest.RepoName][0]
 	}
-	res.ReviewerUsername = reviewerToMattermostUsernameMapping[finalReviewer]
-
-	firstMergeRequests := mergeRequests[0]
-	res.Description = cleanTitle(firstMergeRequests.Title)
 
 	jiraMap := map[string]string{}
-	repoName := getRepoName(repo)
-
-	for _, mr := range mergeRequests {
-		res.MergeRequests = append(res.MergeRequests, SubstitutionMergeRequest{
-			RepoName:     repoName,
-			TargetBranch: mr.TargetBranch,
-			Link:         mr.WebURL,
-		})
-		for _, jiraTicketID := range mr.GetRelatedJiraTickets() {
+	for _, smr := range smrs {
+		for _, jiraTicketID := range smr.GetRelatedJiraTickets() {
 			if _, ok := jiraMap[jiraTicketID]; !ok {
 				jiraMap[jiraTicketID] = buildJiraLink(jiraTicketID)
 			}
@@ -84,9 +90,13 @@ func constructSubstitutionPayload(repo string, reviewer string, mergeRequests []
 	for _, link := range jiraMap {
 		jiraLinks = append(jiraLinks, link)
 	}
-	res.JiraLink = strings.Join(jiraLinks, ",")
 
-	return res
+	return SubstitutionPayload{
+		ReviewerUsername: reviewerToMattermostUsernameMapping[finalReviewer],
+		Description:      cleanTitle(firstMergeRequest.Title),
+		MergeRequests:    smrs,
+		JiraLink:         strings.Join(jiraLinks, ","),
+	}
 }
 
 func buildJiraLink(jiraTicketID string) string {
@@ -119,25 +129,38 @@ type SubstitutionPayload struct {
 }
 
 type SubstitutionMergeRequest struct {
+	Title        string
 	RepoName     string
 	TargetBranch string
 	Link         string
 }
 
+func (s SubstitutionMergeRequest) GetRelatedJiraTickets() []string {
+	re := regexp.MustCompile(`\[(\w+-\w+)\]`)
+	result := []string{}
+
+	matches := re.FindAllStringSubmatch(s.Title, -1)
+	if len(matches) > 0 {
+		for _, m := range matches {
+			if len(m) > 0 {
+				result = append(result, m[1])
+			}
+		}
+	}
+
+	return result
+}
+
 type Args struct {
-	Repository       string
+	Repositories     []string
 	JiraTicketIDs    []string
 	TemplateFilePath string
 }
 
 func (a *Args) FromMap(flag map[string]string) *Args {
-	repositoryVal := flag["repository"]
-	jiraVal := flag["jira"]
-	templateVal := flag["template"]
-
-	a.Repository = repositoryVal
-	a.JiraTicketIDs = strings.Split(jiraVal, ",")
-	a.TemplateFilePath = templateVal
+	a.Repositories = strings.Split(flag["repository"], ",")
+	a.JiraTicketIDs = strings.Split(flag["jira"], ",")
+	a.TemplateFilePath = flag["template"]
 
 	return a
 }

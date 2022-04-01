@@ -119,7 +119,9 @@ func (a accessor) GetProjectByName(ctx context.Context, name string) (*Project, 
 	err := a.getJSON(ctx, fmt.Sprintf(RouteGetProjectsByName, url.QueryEscape(name)), res)
 
 	if err != nil {
-		return nil, errlib.WrapFunc(err)
+		return nil, errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
+			"name": name,
+		}))
 	}
 
 	return res, nil
