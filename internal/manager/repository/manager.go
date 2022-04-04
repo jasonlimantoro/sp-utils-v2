@@ -89,7 +89,7 @@ func (m manager) ListMergeRequests(ctx context.Context, projectID int, jiraTicke
 		return nil, errlib.WrapFunc(err)
 	}
 
-	searchRegex := regexp.MustCompile(search)
+	searchRegex := regexp.MustCompile(fmt.Sprintf("(?i)%s", search))
 
 	res := []*MergeRequest{}
 	for _, mr := range myMergeRequests {
