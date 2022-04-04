@@ -40,6 +40,7 @@ func (m module) Do(ctx context.Context, args *Args) error {
 			repositoryData.ProjectID,
 			args.JiraTicketIDs,
 			args.State,
+			args.Search,
 		)
 		if err != nil {
 			return errlib.WrapFunc(err)
@@ -85,12 +86,14 @@ type Args struct {
 	Repository    []string
 	JiraTicketIDs []string
 	State         string
+	Search        string
 }
 
 func (a *Args) FromMap(flags map[string]string) *Args {
 	a.Repository = strings.Split(flags["repository"], ",")
 	a.JiraTicketIDs = strings.Split(flags["jira"], ",")
 	a.State = flags["state"]
+	a.Search = flags["search"]
 
 	return a
 }

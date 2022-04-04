@@ -39,7 +39,7 @@ func (m module) Do(ctx context.Context, args *Args) error {
 			return errlib.WrapFunc(err)
 		}
 
-		mergeRequests, err := m.repositorydm.ListMergeRequests(ctx, repoData.ProjectID, args.JiraTicketIDs, "opened")
+		mergeRequests, err := m.repositorydm.ListMergeRequests(ctx, repoData.ProjectID, args.JiraTicketIDs, "opened", "")
 		if err != nil {
 			return errlib.WrapFunc(err)
 		}

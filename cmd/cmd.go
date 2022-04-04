@@ -112,7 +112,7 @@ func initCommand(diRegistry *registry.Registry) Command {
 								Description:  "relevant jira tickets (e.g. SPOT-1234,SPOT-3245)",
 								Shorthand:    "j",
 								DefaultValue: "",
-								Required:     true,
+								Required:     false,
 								Persistent:   false,
 							},
 							{
@@ -120,6 +120,14 @@ func initCommand(diRegistry *registry.Registry) Command {
 								Description:  "state of merge requests (e.g., opened, closed, merged, locked)",
 								Shorthand:    "s",
 								DefaultValue: "opened",
+								Required:     false,
+								Persistent:   false,
+							},
+							{
+								Name:         "search",
+								Description:  "search merge request",
+								Shorthand:    "",
+								DefaultValue: "",
 								Required:     false,
 								Persistent:   false,
 							},

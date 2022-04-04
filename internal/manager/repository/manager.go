@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"git.garena.com/shopee/marketplace-payments/common/errlib"
@@ -20,7 +21,7 @@ type Manager interface {
 		description string,
 		jiraTicketIDs []string,
 	) (*MergeRequest, error)
-	ListMergeRequests(ctx context.Context, projectID int, jiraTicketIDs []string, state string) ([]*MergeRequest, error)
+	ListMergeRequests(ctx context.Context, projectID int, jiraTicketIDs []string, state string, search string) ([]*MergeRequest, error)
 }
 
 type manager struct {
@@ -77,7 +78,7 @@ func (m manager) CreateMergeRequest(
 	}, nil
 }
 
-func (m manager) ListMergeRequests(ctx context.Context, projectID int, jiraTicketIDs []string, state string) ([]*MergeRequest, error) {
+func (m manager) ListMergeRequests(ctx context.Context, projectID int, jiraTicketIDs []string, state string, search string) ([]*MergeRequest, error) {
 	myMergeRequests, err := m.accessor.ListMergeRequests(ctx, &gitlab.ListMergeRequestRequest{
 		ID:             projectID,
 		State:          state,
@@ -88,9 +89,11 @@ func (m manager) ListMergeRequests(ctx context.Context, projectID int, jiraTicke
 		return nil, errlib.WrapFunc(err)
 	}
 
+	searchRegex := regexp.MustCompile(search)
+
 	res := []*MergeRequest{}
 	for _, mr := range myMergeRequests {
-		if titleContainsJiraTickets(mr.Title, jiraTicketIDs) {
+		if titleContainsJiraTickets(mr.Title, jiraTicketIDs) && searchRegex.MatchString(mr.Title) {
 			res = append(res, &MergeRequest{
 				Title:        mr.Title,
 				WebURL:       mr.WebURL,
