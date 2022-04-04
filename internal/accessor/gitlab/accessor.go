@@ -77,28 +77,29 @@ func (a accessor) postJSON(ctx context.Context, path string, req, res interface{
 	return nil
 }
 
-func (a accessor) getJSON(ctx context.Context, path string, res interface{}) error {
-	fullURL := fmt.Sprintf("https://%s/%s", GitlabHost, path)
+func (a accessor) getJSON(ctx context.Context, path string, res interface{}) (*http.Response, error) {
+	fullURL := a.getEndpoint(path)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
 	if err != nil {
-		return errlib.WrapFunc(err)
+		return nil, errlib.WrapFunc(err)
 	}
 
 	httpReq.Header.Add("PRIVATE-TOKEN", config.GetGitlabPrivateToken())
 
 	resp, err := a.httpClient.Do(httpReq)
 	if err != nil {
-		return errlib.WrapFunc(err)
+		return nil, errlib.WrapFunc(err)
 	}
+	defer resp.Body.Close()
 
 	resBuf := &bytes.Buffer{}
 	_, err = io.Copy(resBuf, resp.Body)
 	if err != nil {
-		return errlib.WrapFunc(err)
+		return nil, errlib.WrapFunc(err)
 	}
 
 	if resp.StatusCode >= 400 {
-		return errlib.WrapFunc(errlib.WithFields(ErrHTTPStatusNon2xx, errlib.Fields{
+		return nil, errlib.WrapFunc(errlib.WithFields(ErrHTTPStatusNon2xx, errlib.Fields{
 			"response": resBuf.String(),
 			"status":   resp.StatusCode,
 			"endpoint": fullURL,
@@ -107,16 +108,16 @@ func (a accessor) getJSON(ctx context.Context, path string, res interface{}) err
 
 	err = json.Unmarshal(resBuf.Bytes(), res)
 	if err != nil {
-		return errlib.WrapFunc(err)
+		return nil, errlib.WrapFunc(err)
 	}
 
-	return nil
+	return resp, nil
 }
 
 func (a accessor) GetProjectByName(ctx context.Context, name string) (*Project, error) {
 	res := &Project{}
 
-	err := a.getJSON(ctx, fmt.Sprintf(RouteGetProjectsByName, url.QueryEscape(name)), res)
+	_, err := a.getJSON(ctx, fmt.Sprintf(RouteGetProjectsByName, url.QueryEscape(name)), res)
 
 	if err != nil {
 		return nil, errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
@@ -140,11 +141,34 @@ func (a accessor) CreateMergeRequest(ctx context.Context, req *CreateMergeReques
 
 func (a accessor) ListMergeRequests(ctx context.Context, req *ListMergeRequestRequest) ([]*MergeRequest, error) {
 	res := []*MergeRequest{}
-	q, _ := query.Values(req)
 
-	if err := a.getJSON(ctx, fmt.Sprintf(RouteListMergeRequests, req.ID, q.Encode()), &res); err != nil {
+	q, _ := query.Values(req)
+	endpoint := fmt.Sprintf(RouteListMergeRequests, req.ID, q.Encode())
+
+	if err := paginate(
+		endpoint,
+		func(nextEndpoint string) (interface{}, error) {
+			currentBatch := []*MergeRequest{}
+			resp, err := a.getJSON(ctx, nextEndpoint, &currentBatch)
+			if err != nil {
+				return nil, errlib.WrapFunc(err)
+			}
+			res = append(res, currentBatch...)
+			return resp, nil
+		}, func(resp interface{}) string {
+			return defaultGetLinkHeader(resp.(*http.Response))
+		},
+	); err != nil {
 		return nil, errlib.WrapFunc(err)
 	}
 
 	return res, nil
+}
+
+func (a accessor) getEndpoint(path string) string {
+	if isValidURL(path) {
+		return path
+	}
+
+	return fmt.Sprintf("https://%s/%s", GitlabHost, path)
 }
