@@ -15,7 +15,6 @@ import (
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/reviewmergerequest"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/syncrepo"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/registry"
-	"git.garena.com/jason.limantoro/shopee-utils-v2/modules/reviewmergerequest"
 )
 
 type Command struct {
@@ -158,7 +157,7 @@ func initCommand(diRegistry *registry.Registry) Command {
 								Name:         "template",
 								Description:  "code review message template file path",
 								Shorthand:    "t",
-								DefaultValue: reviewmergerequest.DefaultCodeReviewMessageTemplate,
+								DefaultValue: "",
 								Required:     false,
 								Persistent:   false,
 							},

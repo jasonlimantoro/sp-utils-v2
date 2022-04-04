@@ -16,7 +16,18 @@ import (
 )
 
 const (
-	DefaultCodeReviewMessageTemplate = "modules/reviewmergerequest/code-review.tpl"
+	DefaultCodeReviewMessageTemplate = `Hi @{{ .ReviewerUsername }}, please review the following:
+**{{ .Description }}**
+
+{{ range $i, $mr := .MergeRequests -}}
+- {{ $mr.RepoName }}|{{ $mr.TargetBranch }}: {{ $mr.Link }}
+{{ end }}
+Jira: {{ .JiraLink }}
+{{ if .Footer }}
+{{ .Footer }}
+{{ end }}
+Thank you! :capoo-thanks:
+`
 )
 
 type Module interface {
@@ -57,8 +68,7 @@ func (m module) Do(ctx context.Context, args *Args) error {
 
 	substitutionPayload := constructSubstitutionPayload("", substitutionMergeRequests)
 
-	templatePath, _ := filepath.Abs(args.TemplateFilePath)
-	if err := renderMessage(substitutionPayload, templatePath, os.Stdout); err != nil {
+	if err := renderMessage(substitutionPayload, args.TemplateFilePath, os.Stdout); err != nil {
 		return errlib.WrapFunc(err)
 	}
 
@@ -109,8 +119,14 @@ func cleanTitle(title string) string {
 	return strings.TrimSpace(removed)
 }
 
-func renderMessage(payload SubstitutionPayload, templatePath string, out io.Writer) error {
-	t := template.Must(template.ParseFiles(templatePath))
+func renderMessage(payload SubstitutionPayload, templateFilePath string, out io.Writer) error {
+	var t *template.Template
+	if templateFilePath != "" {
+		templatePath, _ := filepath.Abs(templateFilePath)
+		t = template.Must(template.ParseFiles(templatePath))
+	} else {
+		t = template.Must(template.New("review-merge-request").Parse(DefaultCodeReviewMessageTemplate))
+	}
 
 	err := t.Execute(out, payload)
 	if err != nil {

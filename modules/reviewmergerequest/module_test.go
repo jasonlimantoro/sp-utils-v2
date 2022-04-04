@@ -94,6 +94,41 @@ Jira: https://jira.shopee.io/browse/SPOT-36226
 Thank you! :capoo-thanks:
 `,
 		},
+		{
+			name: "without file",
+			args: args{
+				payload: SubstitutionPayload{
+					ReviewerUsername: "shannon.wong",
+					Description:      "Test MR",
+					JiraLink:         "https://jira.shopee.io/browse/SPOT-36226",
+					MergeRequests: []SubstitutionMergeRequest{
+						{
+							RepoName:     "bridge",
+							TargetBranch: "master",
+							Link:         "https://git.garena.com/shopee/pl/marketplace-payment/-/merge_requests/914",
+						},
+						{
+							RepoName:     "bridge",
+							TargetBranch: "uat",
+							Link:         "https://git.garena.com/shopee/pl/marketplace-payment/-/merge_requests/913",
+						},
+					},
+				},
+				templatePath: "",
+				out:          &bytes.Buffer{},
+			},
+			wantErr: false,
+			wantOutString: `Hi @shannon.wong, please review the following:
+**Test MR**
+
+- bridge|master: https://git.garena.com/shopee/pl/marketplace-payment/-/merge_requests/914
+- bridge|uat: https://git.garena.com/shopee/pl/marketplace-payment/-/merge_requests/913
+
+Jira: https://jira.shopee.io/browse/SPOT-36226
+
+Thank you! :capoo-thanks:
+`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
