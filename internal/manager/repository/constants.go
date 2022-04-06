@@ -8,6 +8,7 @@ var RepoToPathMapping = map[string]string{
 	"item":           "shopee/marketplace-payments/item",
 	"buyer":          "shopee/marketplace-payments/buyer",
 	"seller":         "shopee/marketplace-payments/seller",
+	"common":         "shopee/marketplace-payments/common",
 	"tools":          "shopee/marketplace-payments/tools",
 	"admin-bff":      "shopee/marketplace-payments/admin-bff",
 	"mall-bff":       "shopee/marketplace-payments/mall-bff",
