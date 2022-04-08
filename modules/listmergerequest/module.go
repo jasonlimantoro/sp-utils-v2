@@ -30,7 +30,7 @@ func NewModule(repositorydm repository.Manager) *module {
 
 func (m module) Do(ctx context.Context, args *Args) error {
 	for _, repoShortName := range args.Repository {
-		repositoryPath := repository.RepoToPathMapping[repoShortName]
+		repositoryPath := repository.GetRepoPath(repoShortName)
 		repositoryData, err := m.repositorydm.GetByName(ctx, repositoryPath)
 		if err != nil {
 			return errlib.WrapFunc(err)

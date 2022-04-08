@@ -45,7 +45,7 @@ func NewModule(repositorydm repository.Manager) *module {
 func (m module) Do(ctx context.Context, args *Args) error {
 	substitutionMergeRequests := []SubstitutionMergeRequest{}
 	for _, repoShortName := range args.Repositories {
-		repoData, err := m.repositorydm.GetByName(ctx, repository.RepoToPathMapping[repoShortName])
+		repoData, err := m.repositorydm.GetByName(ctx, repository.GetRepoPath(repoShortName))
 		if err != nil {
 			return errlib.WrapFunc(err)
 		}
