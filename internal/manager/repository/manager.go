@@ -21,6 +21,7 @@ type Manager interface {
 		description string,
 		jiraTicketIDs []string,
 	) (*MergeRequest, error)
+	GetBranch(ctx context.Context, projectID int, branchName string) (*Branch, error)
 	ListMergeRequests(ctx context.Context, projectID int, jiraTicketIDs []string, state string, search string) ([]*MergeRequest, error)
 }
 
@@ -76,6 +77,28 @@ func (m manager) CreateMergeRequest(
 		SourceBranch: res.SourceBranch,
 		State:        res.State,
 	}, nil
+}
+
+func (m manager) GetBranch(ctx context.Context, projectID int, branchName string) (*Branch, error) {
+	branches, err := m.accessor.GetBranches(ctx, &gitlab.GetBranchRequest{
+		ProjectID: projectID,
+		Search:    branchName,
+	})
+	if err != nil {
+		return nil, errlib.WrapFunc(err)
+	}
+
+	for _, branch := range branches {
+		if branchName == branch.Name {
+			return &Branch{
+				Name:   branch.Name,
+				Merged: branch.Merged,
+				WebURL: branch.WebURL,
+			}, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func (m manager) ListMergeRequests(ctx context.Context, projectID int, jiraTicketIDs []string, state string, search string) ([]*MergeRequest, error) {

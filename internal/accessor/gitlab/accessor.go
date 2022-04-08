@@ -21,6 +21,7 @@ var ErrHTTPStatusNon2xx = errors.New("err_http_status_non_2xx")
 type Accessor interface {
 	GetProjectByName(ctx context.Context, name string) (*Project, error)
 	CreateMergeRequest(ctx context.Context, req *CreateMergeRequestRequest) (*MergeRequest, error)
+	GetBranches(ctx context.Context, req *GetBranchRequest) ([]*Branch, error)
 	ListMergeRequests(ctx context.Context, req *ListMergeRequestRequest) ([]*MergeRequest, error)
 }
 
@@ -133,6 +134,19 @@ func (a accessor) CreateMergeRequest(ctx context.Context, req *CreateMergeReques
 
 	err := a.postJSON(ctx, fmt.Sprintf(RouteCreateMergeRequest, req.ID), req, res)
 	if err != nil {
+		return nil, errlib.WrapFunc(err)
+	}
+
+	return res, nil
+}
+
+func (a accessor) GetBranches(ctx context.Context, req *GetBranchRequest) ([]*Branch, error) {
+	res := []*Branch{}
+
+	q, _ := query.Values(req)
+	endpoint := fmt.Sprintf(RouteGetBranches, req.ProjectID, q.Encode())
+
+	if _, err := a.getJSON(ctx, endpoint, &res); err != nil {
 		return nil, errlib.WrapFunc(err)
 	}
 

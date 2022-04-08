@@ -5,6 +5,12 @@ type Repository struct {
 	Name      string
 }
 
+type Branch struct {
+	Name   string `json:"name"`
+	Merged bool   `json:"merged"`
+	WebURL string `json:"web_url"`
+}
+
 type MergeRequest struct {
 	Title        string
 	WebURL       string

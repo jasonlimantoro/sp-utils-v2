@@ -14,3 +14,12 @@ var RepoToPathMapping = map[string]string{
 	"mall-bff":       "shopee/marketplace-payments/mall-bff",
 	"beeshop-common": "beetalk-server-deprecated/beeshop_common",
 }
+
+func GetRepoPath(repoName string) string {
+	val, ok := RepoToPathMapping[repoName]
+	if !ok {
+		return repoName
+	}
+
+	return val
+}

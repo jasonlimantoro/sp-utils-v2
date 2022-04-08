@@ -1,5 +1,7 @@
 package gitlab
 
+import "time"
+
 type Project struct {
 	ID            int    `json:"id"`
 	Name          string `json:"name"`
@@ -38,4 +40,35 @@ type MergeRequest struct {
 	SourceBranch string `json:"source_branch"`
 	WebURL       string `json:"web_url"`
 	State        string `json:"state"`
+}
+
+type GetBranchRequest struct {
+	ProjectID int    `url:"-"`
+	Search    string `url:"search"`
+}
+
+type Branch struct {
+	Name   string `json:"name"`
+	Commit struct {
+		ID             string      `json:"id"`
+		ShortID        string      `json:"short_id"`
+		CreatedAt      time.Time   `json:"created_at"`
+		ParentIds      interface{} `json:"parent_ids"`
+		Title          string      `json:"title"`
+		Message        string      `json:"message"`
+		AuthorName     string      `json:"author_name"`
+		AuthorEmail    string      `json:"author_email"`
+		AuthoredDate   time.Time   `json:"authored_date"`
+		CommitterName  string      `json:"committer_name"`
+		CommitterEmail string      `json:"committer_email"`
+		CommittedDate  time.Time   `json:"committed_date"`
+		WebURL         string      `json:"web_url"`
+	} `json:"commit"`
+	Merged             bool   `json:"merged"`
+	Protected          bool   `json:"protected"`
+	DevelopersCanPush  bool   `json:"developers_can_push"`
+	DevelopersCanMerge bool   `json:"developers_can_merge"`
+	CanPush            bool   `json:"can_push"`
+	Default            bool   `json:"default"`
+	WebURL             string `json:"web_url"`
 }

@@ -2,12 +2,17 @@ package createmergerequest
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"git.garena.com/shopee/marketplace-payments/common/errlib"
 
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/manager/repository"
+)
+
+var (
+	ErrSourceBranchNotFound = errors.New("err_source_branch_not_found")
 )
 
 type Module interface {
@@ -23,10 +28,20 @@ func NewModule(repositorydm repository.Manager) *module {
 }
 
 func (m module) Do(ctx context.Context, args *Args) error {
-	repositoryPath := repository.RepoToPathMapping[args.Repository]
+	repositoryPath := repository.GetRepoPath(args.Repository)
 	repoDetail, err := m.repositorydm.GetByName(ctx, repositoryPath)
 	if err != nil {
 		return errlib.WrapFunc(err)
+	}
+
+	remoteSourceBranch, err := m.repositorydm.GetBranch(ctx, repoDetail.ProjectID, args.SourceBranch)
+	if err != nil {
+		return errlib.WrapFunc(err)
+	}
+	if remoteSourceBranch == nil {
+		return errlib.WrapFunc(errlib.WithFields(ErrSourceBranchNotFound, errlib.Fields{
+			"name": args.SourceBranch,
+		}))
 	}
 
 	mergeRequests := []repository.MergeRequest{}
