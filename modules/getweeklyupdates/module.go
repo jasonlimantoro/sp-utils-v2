@@ -40,7 +40,7 @@ func (m module) Do(ctx context.Context, args *Args) error {
 
 	var out io.Writer
 	if args.OutputDirPath != "" {
-		todayString := time.Now().Format("02-Jan-2006")
+		todayString := time.Now().Format("2006-01-02")
 		file, err := os.Create(filepath.Join(args.OutputDirPath, fmt.Sprintf("%s.md", todayString)))
 		if err != nil {
 			return errlib.WrapFunc(err)
