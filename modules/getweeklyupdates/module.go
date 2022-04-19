@@ -16,6 +16,20 @@ import (
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/manager/task"
 )
 
+const (
+	DefaultDraftTemplate = `**What I have done this week**
+
+{{ range $jira, $updates := .UpdatesMap -}}
+- [{{ $jira.Title }}]({{ $jira.Link }})
+{{range $updates }}  - {{.}}
+{{ end }}{{ end }}
+**What I will do next working week**
+
+{{ range $jira, $updates := .UpdatesMap -}}
+- [{{ $jira.Title }}]({{ $jira.Link }})
+{{ end }}`
+)
+
 type Module interface {
 	Do(ctx context.Context, args *Args) error
 }
@@ -58,7 +72,13 @@ func (m module) Do(ctx context.Context, args *Args) error {
 }
 
 func renderMessage(payload SubstitutionPayload, templatePath string, out io.Writer) error {
-	t := template.Must(template.ParseFiles(templatePath))
+	var t *template.Template
+	if templatePath != "" {
+		templateFullPath, _ := filepath.Abs(templatePath)
+		t = template.Must(template.ParseFiles(templateFullPath))
+	} else {
+		t = template.Must(template.New("draft-template").Parse(DefaultDraftTemplate))
+	}
 
 	err := t.Execute(out, payload)
 	if err != nil {

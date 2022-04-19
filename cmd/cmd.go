@@ -239,7 +239,7 @@ func initCommand(diRegistry *registry.Registry) Command {
 								Name:        "template",
 								Description: "template file path",
 								Shorthand:   "t",
-								Required:    true,
+								Required:    false,
 								Persistent:  false,
 							},
 							{
