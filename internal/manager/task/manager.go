@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,6 +11,10 @@ import (
 	"git.garena.com/shopee/marketplace-payments/common/errlib"
 
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/accessor/trello"
+)
+
+var (
+	ErrListNotFound = errors.New("err_list_not_found")
 )
 
 type Manager interface {
@@ -36,6 +41,12 @@ func (m manager) CreateInList(ctx context.Context, listName string, title string
 		if v.Name == listName {
 			list = v
 		}
+	}
+
+	if list == nil {
+		return nil, errlib.WrapFunc(errlib.WithFields(ErrListNotFound, errlib.Fields{
+			"listName": listName,
+		}))
 	}
 
 	description := m.buildDescription(jiraLink, epicLink, TDLink, PRDLink)
