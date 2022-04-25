@@ -43,10 +43,10 @@ type Module interface {
 }
 
 type module struct {
-	logger *logrus.Logger
+	logger logrus.FieldLogger
 }
 
-func NewModule(logger *logrus.Logger) *module {
+func NewModule(logger logrus.FieldLogger) *module {
 	return &module{
 		logger: logger,
 	}

@@ -14,7 +14,7 @@ type Module interface {
 }
 
 type module struct {
-	logger  *logrus.Logger
+	logger  logrus.FieldLogger
 	manager task.Manager
 }
 
@@ -41,7 +41,7 @@ func (m module) Do(ctx context.Context, args *Args) error {
 	return nil
 }
 
-func NewModule(manager task.Manager, logger *logrus.Logger) *module {
+func NewModule(manager task.Manager, logger logrus.FieldLogger) *module {
 	return &module{manager: manager, logger: logger}
 }
 
