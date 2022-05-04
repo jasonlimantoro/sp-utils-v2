@@ -100,7 +100,7 @@ func initCommand(diRegistry *registry.Registry) Command {
 						Flags: []Flag{
 							{
 								Name:         "repository",
-								Description:  "repository to create the MR in",
+								Description:  "repositories the MR(s) belong to",
 								Shorthand:    "r",
 								DefaultValue: "",
 								Required:     true,
@@ -139,7 +139,7 @@ func initCommand(diRegistry *registry.Registry) Command {
 						Flags: []Flag{
 							{
 								Name:         "repository",
-								Description:  "repository to create the MR in",
+								Description:  "repository the MR belongs to",
 								Shorthand:    "r",
 								DefaultValue: "",
 								Required:     true,
