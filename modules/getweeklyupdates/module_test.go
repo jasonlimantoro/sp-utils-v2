@@ -38,7 +38,7 @@ func Test_renderMessage(t *testing.T) {
 						}: {"update 3", "update 4"},
 					},
 				},
-				templatePath: absPath("draft.tpl"),
+				templatePath: absPath("draft.tmpl"),
 			},
 			wantOut: `**What I have done this week**
 
