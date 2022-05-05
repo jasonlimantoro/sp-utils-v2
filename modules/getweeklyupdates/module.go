@@ -49,7 +49,7 @@ func NewModule(taskmanager task.Manager, logger logger.Logger) *module {
 	return &module{taskmanager: taskmanager, logger: logger}
 }
 func (m module) Do(ctx context.Context, args *Args) error {
-	mondayDate := getMondayDate(time.Now(), args.DeltaWeek)
+	mondayDate := lib.GetWeekday(time.Now(), args.DeltaWeek, time.Monday)
 	weeklyUpdates, err := m.taskmanager.GetWeeklyUpdates(ctx, mondayDate)
 	if err != nil {
 		return errlib.WrapFunc(err)

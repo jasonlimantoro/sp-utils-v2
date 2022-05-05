@@ -10,6 +10,7 @@ import (
 	"git.garena.com/shopee/marketplace-payments/common/errlib"
 	"github.com/gomarkdown/markdown"
 
+	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/lib"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/manager/email"
 )
 
@@ -32,7 +33,7 @@ func NewModule(emaildm email.Manager) *module {
 }
 
 func (m module) Do(ctx context.Context, args *Args) error {
-	eowDate := getFridayDate(time.Now(), args.DeltaWeek)
+	eowDate := lib.GetWeekday(time.Now(), args.DeltaWeek, time.Friday)
 	subject := strings.NewReplacer(
 		"{prefix}", PrefixWeeklyReport,
 		"{name}", Name,
