@@ -3,6 +3,7 @@ package createdraft
 import (
 	"context"
 	"io/ioutil"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 )
 
 const (
-	SubjectTemplate    = "{prefix} {name} {today}"
+	SubjectTemplate    = "{prefix} {name} {eow}"
 	Name               = "Jason Gunawan Limantoro"
 	PrefixWeeklyReport = "[Weekly Report]"
 )
@@ -31,11 +32,11 @@ func NewModule(emaildm email.Manager) *module {
 }
 
 func (m module) Do(ctx context.Context, args *Args) error {
-	todayString := time.Now().Format("2006/01/02")
+	eowDate := getFridayDate(time.Now(), args.DeltaWeek)
 	subject := strings.NewReplacer(
 		"{prefix}", PrefixWeeklyReport,
 		"{name}", Name,
-		"{today}", todayString,
+		"{eow}", eowDate.Format("2006/01/02"),
 	).Replace(SubjectTemplate)
 
 	content, err := ioutil.ReadFile(args.InputFile)
@@ -59,10 +60,15 @@ func (m module) Do(ctx context.Context, args *Args) error {
 
 type Args struct {
 	InputFile string
+	DeltaWeek int
 }
 
 func (a *Args) FromMap(flags map[string]string) *Args {
 	a.InputFile = flags["input-file"]
+
+	deltaWeekVal := flags["delta-week"]
+	deltaWeekInt, _ := strconv.Atoi(deltaWeekVal)
+	a.DeltaWeek = deltaWeekInt
 
 	return a
 }

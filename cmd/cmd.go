@@ -263,6 +263,13 @@ func initCommand(diRegistry *registry.Registry) Command {
 								DefaultValue: "",
 								Required:     true,
 							},
+							{
+								Name:         "delta-week",
+								Description:  "Delta week from now (0: current week, 1: last week)",
+								Shorthand:    "",
+								DefaultValue: "",
+								Required:     true,
+							},
 						},
 						Runner: createdraftcmd.NewRunner(diRegistry.CreateDraftModule),
 					},
