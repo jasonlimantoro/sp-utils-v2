@@ -278,24 +278,10 @@ func initCommand(diRegistry *registry.Registry) Command {
 						SubCommands: nil,
 						Flags: []Flag{
 							{
-								Name:        "root",
-								Description: "root directories containing git repositories",
-								Shorthand:   "r",
-								Required:    false,
-								Persistent:  false,
-							},
-							{
-								Name:        "root-file",
-								Description: "csv file containing root dirs",
+								Name:        "repo-file",
+								Description: "csv file containing repository path and target branches",
 								Shorthand:   "",
 								Required:    false,
-								Persistent:  false,
-							},
-							{
-								Name:        "branch",
-								Description: "branches to sync",
-								Shorthand:   "b",
-								Required:    true,
 								Persistent:  false,
 							},
 						},

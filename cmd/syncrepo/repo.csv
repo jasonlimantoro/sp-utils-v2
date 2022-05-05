@@ -1,2 +1,3 @@
-/Users/jason.limantoro/code/shopee
-/Users/jason.limantoro/git.garena.com
+/Users/jason.limantoro/git.garena.com/core-services/beeshop_web,test:test;uat:uat;master:master
+/Users/jason.limantoro/git.garena.com/core-services/shopee_backend,test:test;uat:uat;master:master;payment-test:payment-test
+/Users/jason.limantoro/git.garena.com/shopee/pl/marketplace-payment,test:test;uat:uat;master:master

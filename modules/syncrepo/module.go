@@ -2,8 +2,9 @@ package syncrepo
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"io/fs"
+	"fmt"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
@@ -38,6 +39,10 @@ var (
 	}
 )
 
+const (
+	RemoteOrigin = "origin"
+)
+
 type Module interface {
 	Do(ctx context.Context, args *Args) error
 }
@@ -54,9 +59,9 @@ func NewModule(logger logrus.FieldLogger) *module {
 
 func (m module) Do(ctx context.Context, args *Args) error {
 	start := time.Now()
+	argBytes, _ := json.Marshal(args)
 	cmdLogger := m.logger.WithFields(logrus.Fields{
-		"root":     args.Root,
-		"branches": args.Branches,
+		"args": string(argBytes),
 	})
 	cmdLogger.Info("start")
 
@@ -67,25 +72,14 @@ func (m module) Do(ctx context.Context, args *Args) error {
 		}).Info("ended")
 	}()
 
-	allRepositories := []string{}
-	for _, root := range args.Root {
-		repositories, err := findRepositories(root)
-		if err != nil {
-			return errlib.WrapFunc(err)
-		}
-		allRepositories = append(allRepositories, repositories...)
-	}
-
-	m.logger.Infof("repositories: %+v", allRepositories)
-
 	wg := &sync.WaitGroup{}
-	wg.Add(len(allRepositories))
-	for _, repository := range allRepositories {
-		go func(repository string) {
+	wg.Add(len(args.Repositories))
+	for _, repository := range args.Repositories {
+		go func(repository Repository) {
 			defer wg.Done()
-			if err := m.process(ctx, repository, args.Branches); err != nil {
+			if err := m.process(ctx, repository.Path, repository.TargetBranches); err != nil {
 				m.logger.WithError(errlib.WithFields(err, errlib.Fields{
-					"repository": repository,
+					"repository": repository.Path,
 				})).Error("error processing")
 			}
 		}(repository)
@@ -95,24 +89,7 @@ func (m module) Do(ctx context.Context, args *Args) error {
 	return nil
 }
 
-func findRepositories(rootDirectory string) ([]string, error) {
-	res := []string{}
-	err := filepath.WalkDir(rootDirectory, func(path string, d fs.DirEntry, err error) error {
-		_, plainOpenErr := git.PlainOpen(path)
-		if plainOpenErr == nil {
-			res = append(res, path)
-			return filepath.SkipDir
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, errlib.WrapFunc(err)
-	}
-
-	return res, nil
-}
-
-func (m module) process(ctx context.Context, repositoryPath string, branches []string) error {
+func (m module) process(ctx context.Context, repositoryPath string, branches []Branch) error {
 	repositoryLogger := m.logger.WithFields(logrus.Fields{
 		"repository": repositoryPath,
 	})
@@ -161,7 +138,7 @@ func (m module) process(ctx context.Context, repositoryPath string, branches []s
 			}).Info("start")
 			// Note: the checkout implementation of go-git is different from that of git.
 			// Open issue: https://github.com/src-d/go-git/issues/1026
-			out, err := exec.Command("git", "-C", repositoryPath, "checkout", branch).CombinedOutput()
+			out, err := exec.Command("git", "-C", repositoryPath, "checkout", branch.Local).CombinedOutput()
 			if err != nil {
 				return errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
 					"command": "git checkout",
@@ -174,21 +151,21 @@ func (m module) process(ctx context.Context, repositoryPath string, branches []s
 			}).Info("success")
 
 			branchLogger.WithFields(logrus.Fields{
-				"command": "git pull",
+				"command": fmt.Sprintf("git pull %s", RemoteOrigin),
 			}).Info("start")
 			start := time.Now()
 			// Note: the pull implementation of go-git is super slow
-			if out, err = exec.Command("git", "-C", repositoryPath, "pull").CombinedOutput(); err != nil {
+			if out, err = exec.Command("git", "-C", repositoryPath, "pull", RemoteOrigin, branch.Remote).CombinedOutput(); err != nil {
 				return errlib.WrapFunc(errlib.WithFields(err, errlib.Fields{
 					"branch":  branch,
-					"command": "git pull",
+					"command": fmt.Sprintf("git pull %s", RemoteOrigin),
 					"out":     string(out),
 				}))
 			}
 			elapsed := time.Since(start)
 			branchLogger.WithFields(logrus.Fields{
 				"elapsed": elapsed.Seconds(),
-				"command": "git pull",
+				"command": fmt.Sprintf("git pull %s", RemoteOrigin),
 				"result":  string(out),
 			}).Info("success")
 		}
@@ -217,17 +194,23 @@ func (m module) process(ctx context.Context, repositoryPath string, branches []s
 }
 
 type Args struct {
-	Root     []string
-	Branches []string
+	Repositories []Repository
+}
+
+type Repository struct {
+	Path           string
+	TargetBranches []Branch
+}
+
+type Branch struct {
+	Local  string
+	Remote string
 }
 
 func (a *Args) FromMap(flags map[string]string) (*Args, error) {
-	a.Root = strings.Split(flags["root"], ",")
-	a.Branches = strings.Split(flags["branch"], ",")
-
-	rootFile := flags["root-file"]
-	if rootFile != "" {
-		path, err := filepath.Abs(rootFile)
+	repoFile := flags["repo-file"]
+	if repoFile != "" {
+		path, err := filepath.Abs(repoFile)
 		if err != nil {
 			return nil, errlib.WrapFunc(err)
 		}
@@ -235,8 +218,27 @@ func (a *Args) FromMap(flags map[string]string) (*Args, error) {
 		if err != nil {
 			return nil, errlib.WrapFunc(err)
 		}
-		rootDirs := strings.Split(string(content), "\n")
-		a.Root = append(a.Root, rootDirs...)
+
+		rows := strings.Split(string(content), "\n")
+		for _, row := range rows {
+			cols := strings.Split(row, ",")
+			path := cols[0]
+			branchPairs := strings.Split(cols[1], ";")
+
+			branches := []Branch{}
+			for _, branchPair := range branchPairs {
+				branchLocalRemote := strings.Split(branchPair, ":")
+				branches = append(branches, Branch{
+					Local:  branchLocalRemote[0],
+					Remote: branchLocalRemote[1],
+				})
+			}
+
+			a.Repositories = append(a.Repositories, Repository{
+				Path:           path,
+				TargetBranches: branches,
+			})
+		}
 	}
 
 	return a, nil
