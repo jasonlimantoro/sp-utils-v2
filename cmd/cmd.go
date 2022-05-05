@@ -231,9 +231,11 @@ func initCommand(diRegistry *registry.Registry) Command {
 						SubCommands: nil,
 						Flags: []Flag{
 							{
-								Name:         "delta-week",
-								Description:  "Delta week from now (0: current week, 1: last week)",
-								DefaultValue: "0",
+								Name:        "delta-week",
+								Description: "Delta week from now (0: current week, 1: last week)",
+								Shorthand:   "",
+								Required:    true,
+								Persistent:  false,
 							},
 							{
 								Name:        "template",

@@ -2,6 +2,7 @@ package getweeklyupdates
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,6 +13,7 @@ import (
 
 	"git.garena.com/shopee/marketplace-payments/common/errlib"
 
+	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/lib"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/logger"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/internal/manager/task"
 )
@@ -28,6 +30,10 @@ const (
 {{ range $jira, $updates := .UpdatesMap -}}
 - [{{ $jira.Title }}]({{ $jira.Link }})
 {{ end }}`
+)
+
+var (
+	ErrDraftAlreadyExists = errors.New("err_draft_already_exists")
 )
 
 type Module interface {
@@ -54,8 +60,17 @@ func (m module) Do(ctx context.Context, args *Args) error {
 
 	var out io.Writer
 	if args.OutputDirPath != "" {
-		todayString := time.Now().Format("2006-01-02")
-		file, err := os.Create(filepath.Join(args.OutputDirPath, fmt.Sprintf("%s.md", todayString)))
+		eowDateString := lib.GetWeekday(time.Now(), args.DeltaWeek, time.Friday).Format("2006-01-02")
+		filePath := filepath.Join(args.OutputDirPath, fmt.Sprintf("%s.md", eowDateString))
+
+		_, err := os.Stat(filePath)
+		if !errors.Is(err, os.ErrNotExist) {
+			return errlib.WrapFunc(errlib.WithFields(ErrDraftAlreadyExists, errlib.Fields{
+				"filepath": filePath,
+			}))
+		}
+
+		file, err := os.Create(filePath)
 		if err != nil {
 			return errlib.WrapFunc(err)
 		}
