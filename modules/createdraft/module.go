@@ -46,7 +46,7 @@ func (m module) Do(ctx context.Context, args *Args) error {
 
 	if err := m.emaildm.CreateDraft(ctx, &email.CreateDraftRequest{
 		Subject:     subject,
-		To:          "trunghai.bui@shopee.com,roslim@sea.com",
+		To:          "buith@sea.com,roslim@sea.com",
 		CC:          "limx@sea.com",
 		ContentType: "text/html; charset=UTF-8",
 		Body:        html,
