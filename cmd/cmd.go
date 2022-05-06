@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createcard"
 	"git.garena.com/jason.limantoro/shopee-utils-v2/cmd/createdraft"
@@ -32,6 +33,7 @@ type Flag struct {
 	DefaultValue string
 	Required     bool
 	Persistent   bool
+	Env          string
 }
 
 type Runner interface {
@@ -292,6 +294,7 @@ func initCommand(diRegistry *registry.Registry) Command {
 								Shorthand:   "",
 								Required:    false,
 								Persistent:  false,
+								Env:         "SYNC_REPO_FILE",
 							},
 						},
 						Runner: syncrepocmd.NewRunner(diRegistry.SyncRepoModule),
@@ -322,10 +325,17 @@ func initCobra(command Command) *cobra.Command {
 			flagsMap := make(map[string]string)
 
 			for _, flag := range command.Flags {
+				var flagValue string
 				if flag.Persistent {
-					flagsMap[flag.Name] = cmd.PersistentFlags().Lookup(flag.Name).Value.String()
+					flagValue = cmd.PersistentFlags().Lookup(flag.Name).Value.String()
 				} else {
-					flagsMap[flag.Name] = cmd.Flags().Lookup(flag.Name).Value.String()
+					flagValue = cmd.Flags().Lookup(flag.Name).Value.String()
+				}
+
+				if flagValue != "" {
+					flagsMap[flag.Name] = flagValue
+				} else {
+					flagsMap[flag.Name] = viper.GetString(flag.Name)
 				}
 			}
 
@@ -338,18 +348,24 @@ func initCobra(command Command) *cobra.Command {
 	}
 
 	for _, flag := range command.Flags {
+		defaultValue := flag.DefaultValue
+		if flag.Env != "" {
+			viper.BindEnv(flag.Name, flag.Env)
+			defaultValue = viper.GetString(flag.Name)
+		}
+
 		if flag.Persistent {
 			cobraCmd.PersistentFlags().StringP(
 				flag.Name,
 				flag.Shorthand,
-				flag.DefaultValue,
+				defaultValue,
 				flag.Description,
 			)
 		} else {
 			cobraCmd.Flags().StringP(
 				flag.Name,
 				flag.Shorthand,
-				flag.DefaultValue,
+				defaultValue,
 				flag.Description,
 			)
 		}
